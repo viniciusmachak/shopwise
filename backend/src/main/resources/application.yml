@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: shopwise
+  datasource:
+    url: ${SHOPWISE_DB_URL:jdbc:postgresql://localhost:5432/shopwise}
+    username: ${SHOPWISE_DB_USER:shopwise}
+    password: ${SHOPWISE_DB_PASSWORD:shopwise}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  threads:
+    virtual:
+      enabled: true
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: true
+  ai:
+    model:
+      # Chat models are built by the assistant module (cloud or local mode),
+      # so Spring AI's chat auto-configuration stays off.
+      chat: none
+      embedding: ollama
+      audio:
+        speech: none
+        transcription: none
+      image: none
+      moderation: none
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      embedding:
+        options:
+          model: ${SHOPWISE_EMBEDDING_MODEL:nomic-embed-text}
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+shopwise:
+  ai:
+    chat-mode: ${SHOPWISE_AI_CHAT_MODE:local}
+    fallback-to-local: ${SHOPWISE_AI_FALLBACK_TO_LOCAL:true}
+    local:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      model: ${SHOPWISE_OLLAMA_CHAT_MODEL:qwen2.5:7b}
+    cloud:
+      providers:
+        - name: gemini
+          base-url: https://generativelanguage.googleapis.com/v1beta/openai
+          api-key: ${GEMINI_API_KEY:}
+          model: ${SHOPWISE_GEMINI_MODEL:gemini-2.5-flash}
+        - name: groq
+          base-url: https://api.groq.com/openai/v1
+          api-key: ${GROQ_API_KEY:}
+          model: ${SHOPWISE_GROQ_MODEL:llama-3.3-70b-versatile}
