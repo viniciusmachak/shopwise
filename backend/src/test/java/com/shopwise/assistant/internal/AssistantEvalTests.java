@@ -35,7 +35,7 @@ import com.shopwise.cart.CartService;
         "shopwise.scheduling.enabled=false"
 })
 @Import(TestcontainersConfiguration.class)
-class AssistantEvals {
+class AssistantEvalTests {
 
     @Autowired
     AssistantService assistant;
