@@ -5,6 +5,13 @@ spring:
     url: ${SHOPWISE_DB_URL:jdbc:postgresql://localhost:5432/shopwise}
     username: ${SHOPWISE_DB_USER:shopwise}
     password: ${SHOPWISE_DB_PASSWORD:shopwise}
+  flyway:
+    # db/seed holds demo data for local development; production overrides this.
+    locations: ${SHOPWISE_FLYWAY_LOCATIONS:classpath:db/migration,classpath:db/seed}
+  data:
+    web:
+      pageable:
+        serialization-mode: via-dto
   jpa:
     open-in-view: false
     hibernate:
