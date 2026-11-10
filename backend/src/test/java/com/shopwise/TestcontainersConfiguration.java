@@ -2,7 +2,9 @@ package com.shopwise;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -14,5 +16,11 @@ public class TestcontainersConfiguration {
     PostgreSQLContainer postgres() {
         return new PostgreSQLContainer(DockerImageName.parse("pgvector/pgvector:pg17")
                 .asCompatibleSubstituteFor("postgres"));
+    }
+
+    @Bean
+    @Primary
+    EmbeddingModel fakeEmbeddingModel() {
+        return new FakeEmbeddingModel();
     }
 }
