@@ -22,6 +22,8 @@
         <spring-ai.version>2.0.2</spring-ai.version>
         <spring-modulith.version>2.1.2</spring-modulith.version>
         <springdoc.version>3.2.0</springdoc.version>
+        <surefire.groups/>
+        <surefire.excludedGroups>eval</surefire.excludedGroups>
     </properties>
 
     <dependencyManagement>
@@ -145,6 +147,25 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludedGroups>${surefire.excludedGroups}</excludedGroups>
+                    <groups>${surefire.groups}</groups>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Assistant evals: real conversations against a local Ollama. ./mvnw verify -Pevals -->
+        <profile>
+            <id>evals</id>
+            <properties>
+                <surefire.groups>eval</surefire.groups>
+                <surefire.excludedGroups/>
+            </properties>
+        </profile>
+    </profiles>
 </project>
