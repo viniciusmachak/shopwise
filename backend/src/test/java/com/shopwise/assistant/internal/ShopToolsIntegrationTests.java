@@ -121,4 +121,13 @@ class ShopToolsIntegrationTests {
 
         assertThat(events).containsExactly("tool_status", "ui.products");
     }
+
+    @Test
+    void acceptsCategoryNamesAndIgnoresUnknownCategories() {
+        var byName = tools().searchProducts("waterproof", "Running Shoes", null, null);
+        var unknown = tools().searchProducts("Stormguard GTX Runner", "sneakers", null, null);
+
+        assertThat(byName.products()).extracting(ShopTools.ProductBrief::name).contains("Stormguard GTX Runner");
+        assertThat(unknown.products()).extracting(ShopTools.ProductBrief::name).contains("Stormguard GTX Runner");
+    }
 }

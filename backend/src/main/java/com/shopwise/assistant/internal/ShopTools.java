@@ -3,9 +3,12 @@ package com.shopwise.assistant.internal;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
@@ -23,6 +26,8 @@ import com.shopwise.search.SearchService;
  * request's cookie, never from the model. Results are kept small on purpose.
  */
 class ShopTools {
+
+    private static final Logger log = LoggerFactory.getLogger(ShopTools.class);
 
     private static final int MAX_DESCRIPTION = 400;
 
@@ -52,7 +57,8 @@ class ShopTools {
             @ToolParam(required = false, description = "Maximum price in USD") BigDecimal maxPrice,
             @ToolParam(required = false, description = "Minimum price in USD") BigDecimal minPrice) {
         status("searchProducts");
-        var results = search.search(new SearchQuery(query, blankToNull(category), minPrice, maxPrice, null, 6));
+        log.debug("searchProducts query={} category={} minPrice={} maxPrice={}", query, category, minPrice, maxPrice);
+        var results = search.search(new SearchQuery(query, categorySlug(category), minPrice, maxPrice, null, 6));
         ui.emit("ui.products", results);
         return new SearchResult(results.stream().map(ProductBrief::of).toList());
     }
@@ -81,7 +87,7 @@ class ShopTools {
 
     @Tool(description = "Add a product to the user's cart. The size is required when the product comes in several sizes.")
     Object addToCart(
-            @ToolParam(description = "Product id") long productId,
+            @ToolParam(description = "The id of the exact product the user chose, copied from a searchProducts result") long productId,
             @ToolParam(required = false, description = "Size, e.g. 10 for shoes or M for apparel") String size,
             @ToolParam(required = false, description = "How many, default 1") Integer quantity) {
         status("addToCart");
@@ -153,6 +159,22 @@ class ShopTools {
 
     private void status(String tool) {
         ui.emit("tool_status", Map.of("tool", tool, "state", "running"));
+    }
+
+    /**
+     * Models often send a category name ("Running Shoes") instead of the slug. Accept both,
+     * and ignore categories that don't exist rather than returning nothing.
+     */
+    private String categorySlug(String category) {
+        if (category == null || category.isBlank()) {
+            return null;
+        }
+        var wanted = category.trim().toLowerCase(Locale.ROOT).replace(' ', '-');
+        return catalog.categories().stream()
+                .filter(c -> c.slug().equals(wanted) || c.name().equalsIgnoreCase(category.trim()))
+                .map(c -> c.slug())
+                .findFirst()
+                .orElse(null);
     }
 
     private static String blankToNull(String s) {

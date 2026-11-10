@@ -7,11 +7,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.annotation.Tool;
 
 import com.shopwise.assistant.ChatMode;
 
@@ -123,5 +127,37 @@ class RoutingChatModelTests {
 
         assertThat(router.stream(new Prompt("hi")).map(RoutingChatModelTests::text).collectList().block())
                 .containsExactly("ollama");
+    }
+
+    static class OneTool {
+
+        @Tool(description = "Says hello")
+        String hello() {
+            return "hello";
+        }
+    }
+
+    @Test
+    void toolsFromChatClientReachTheModelWithItsOwnOptions() {
+        var received = new java.util.concurrent.atomic.AtomicReference<ChatOptions>();
+        ChatModel target = new ChatModel() {
+            @Override
+            public ChatResponse call(Prompt prompt) {
+                received.set(prompt.getOptions());
+                return FakeModel.response("ok");
+            }
+
+            @Override
+            public ChatOptions getOptions() {
+                return ToolCallingChatOptions.builder().model("target-model").build();
+            }
+        };
+        var router = new RoutingChatModel(new ChatModeSettings(ChatMode.LOCAL), false, List.of(),
+                new NamedChatModel("target", target));
+
+        ChatClient.builder(router).build().prompt().user("hi").tools(new OneTool()).call().content();
+
+        assertThat(received.get().getModel()).isEqualTo("target-model");
+        assertThat(((ToolCallingChatOptions) received.get()).getToolCallbacks()).hasSize(1);
     }
 }

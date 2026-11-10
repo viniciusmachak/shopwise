@@ -90,7 +90,9 @@ class RoutingChatModel implements ChatModel {
     }
 
     @Override
-    public ChatOptions getDefaultOptions() {
+    public ChatOptions getOptions() {
+        // Portable options: ChatClient fills in tools here, and retarget() moves them
+        // onto the chosen model's own option type.
         return ToolCallingChatOptions.builder().build();
     }
 
@@ -98,18 +100,19 @@ class RoutingChatModel implements ChatModel {
      * Moves the portable options chosen by ChatClient (tools, tool context, temperature)
      * onto the target model's own option type.
      */
-    private static Prompt retarget(Prompt prompt, ChatModel target) {
-        if (!(prompt.getOptions() instanceof ToolCallingChatOptions requested)) {
-            return prompt;
-        }
+    static Prompt retarget(Prompt prompt, ChatModel target) {
+        var requested = prompt.getOptions();
         var builder = target.getDefaultOptions().mutate();
-        if (builder instanceof ToolCallingChatOptions.Builder<?> tools) {
-            tools.toolCallbacks(requested.getToolCallbacks());
-            tools.toolContext(requested.getToolContext());
+        if (requested instanceof ToolCallingChatOptions tooling
+                && builder instanceof ToolCallingChatOptions.Builder<?> tools) {
+            tools.toolCallbacks(tooling.getToolCallbacks());
+            tools.toolContext(tooling.getToolContext());
         }
-        if (requested.getTemperature() != null) {
+        if (requested != null && requested.getTemperature() != null) {
             builder.temperature(requested.getTemperature());
         }
+        log.debug("Routing to {} with options {}", target.getClass().getSimpleName(),
+                requested == null ? "none" : requested.getClass().getSimpleName());
         return prompt.mutate().chatOptions(builder.build()).build();
     }
 }
