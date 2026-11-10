@@ -143,7 +143,7 @@ Small recurring chores, like expiring pending actions, are plain `@Scheduled` me
 
 ## Running it
 
-Locally, `deploy/docker-compose.yml` starts Postgres (pgvector image), Ollama, the backend, Mailpit for e-mails, and Prometheus with Grafana. Cloud API keys go in a git-ignored `.env`. Without keys, the app runs in local mode.
+Locally, `deploy/docker-compose.yml` starts Postgres (pgvector image, on port 5433), Ollama with the embedding and chat models, and Mailpit for e-mails. The backend and frontend run from their folders. Cloud API keys and model names go in a git-ignored `.env` at the repo root, which the backend loads on startup. Without keys, the app runs in local mode. Prometheus and Grafana join the compose file with the production deploy.
 
 In production, the same compose file runs on an Oracle Cloud Always Free ARM VM (4 cores, 24 GB) behind Caddy for HTTPS. The frontend is a static build on Cloudflare Pages. A nightly `pg_dump` goes to Oracle's free object storage. E-mail goes through the Brevo or Resend free tier. GitHub Actions builds the image, pushes it to GHCR and deploys over SSH. DuckDNS gives a free domain.
 

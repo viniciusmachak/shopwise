@@ -26,12 +26,14 @@ deploy/      docker-compose files, Caddyfile
 Keep this list current when commands change.
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d    # Postgres, Ollama, Mailpit, Prometheus, Grafana
+cp .env.example .env                                  # local keys and model names, git-ignored
+docker compose -f deploy/docker-compose.yml up -d    # Postgres (:5433), Ollama (pulls models), Mailpit
 cd backend && ./mvnw spring-boot:run                  # backend on :8080, local AI mode by default
-cd backend && ./mvnw verify                           # unit + integration tests
-cd backend && ./mvnw verify -Pevals                   # assistant evals (needs Ollama)
+cd backend && ./mvnw verify                           # unit + integration tests (Testcontainers)
+cd backend && ./mvnw verify -Pevals                   # assistant evals against local Ollama
 cd frontend && npm run dev                            # frontend on :5173, proxies /api to :8080
 cd frontend && npm run check                          # lint + typecheck + tests
+cd frontend && npm run gen:api                        # regenerate API types (backend must be running)
 ```
 
 ## Architecture
@@ -81,7 +83,7 @@ These protect users. Don't relax them without the maintainer's approval.
 - Backend unit tests: JUnit 5 and AssertJ, one test class per service, no Spring context unless needed.
 - Backend integration tests: `@SpringBootTest` with Testcontainers (`pgvector/pgvector:pg17`). Don't mock the database.
 - Module tests: `@ApplicationModuleTest` per module, plus one `ApplicationModules.verify()` test.
-- Assistant evals: scripted conversations in `backend/src/test/evals`. They assert which tools were called and the resulting cart or order state, never the exact wording. Any change to prompts or tools needs an eval that covers it.
+- Assistant evals: scripted conversations tagged `eval` (see `AssistantEvalTests`), excluded from the normal build and run with `-Pevals`. They assert which tools were called and the resulting cart or order state, never the exact wording. Any change to prompts or tools needs an eval that covers it.
 - Frontend: Vitest and Testing Library for components, Playwright for a few end-to-end flows (search, add to cart, checkout through the chat).
 - A bug fix comes with a test that fails without the fix.
 

@@ -1,0 +1,34 @@
+name: Assistant evals
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+    env:
+      SHOPWISE_OLLAMA_CHAT_MODEL: qwen2.5:7b
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Pull models
+        run: |
+          curl -sf http://localhost:11434/api/pull -d '{"name":"nomic-embed-text"}' > /dev/null
+          curl -sf http://localhost:11434/api/pull -d "{\"name\":\"$SHOPWISE_OLLAMA_CHAT_MODEL\"}" > /dev/null
+      - name: Run evals
+        run: ./mvnw -B verify -Pevals
