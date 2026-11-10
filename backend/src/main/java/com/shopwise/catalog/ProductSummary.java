@@ -1,5 +1,7 @@
 package com.shopwise.catalog;
 
+import org.jspecify.annotations.Nullable;
+
 public record ProductSummary(
         long id,
         String slug,
@@ -7,6 +9,6 @@ public record ProductSummary(
         String brand,
         String category,
         Money price,
-        String imageUrl,
+        @Nullable String imageUrl,
         boolean inStock) {
 }

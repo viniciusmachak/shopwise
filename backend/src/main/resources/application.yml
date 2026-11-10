@@ -1,8 +1,11 @@
 spring:
   application:
     name: shopwise
+  config:
+    # Local secrets and overrides (API keys, model names) from the repo-root .env, if present.
+    import: optional:file:../.env[.properties]
   datasource:
-    url: ${SHOPWISE_DB_URL:jdbc:postgresql://localhost:5432/shopwise}
+    url: ${SHOPWISE_DB_URL:jdbc:postgresql://localhost:5433/shopwise}
     username: ${SHOPWISE_DB_USER:shopwise}
     password: ${SHOPWISE_DB_PASSWORD:shopwise}
   flyway:
@@ -45,6 +48,11 @@ spring:
         repository:
           jdbc:
             initialize-schema: always
+
+springdoc:
+  model-converters:
+    java-nullable-property-customizer:
+      enabled: true
 
 management:
   endpoints:

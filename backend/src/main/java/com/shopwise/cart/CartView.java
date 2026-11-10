@@ -1,5 +1,7 @@
 package com.shopwise.cart;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 
 import com.shopwise.catalog.Money;
@@ -8,7 +10,7 @@ public record CartView(
         List<Line> items,
         int itemCount,
         Money subtotal,
-        String couponCode,
+        @Nullable String couponCode,
         Money discount,
         Money total) {
 
@@ -17,8 +19,8 @@ public record CartView(
             long variantId,
             long productId,
             String productName,
-            String size,
-            String color,
+            @Nullable String size,
+            @Nullable String color,
             Money unitPrice,
             int quantity,
             Money lineTotal,

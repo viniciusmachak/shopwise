@@ -1,5 +1,7 @@
 package com.shopwise.catalog;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +14,6 @@ public record ProductDetail(
         String description,
         Money price,
         Map<String, Object> attributes,
-        String imageUrl,
+        @Nullable String imageUrl,
         List<VariantView> variants) {
 }
