@@ -2,6 +2,7 @@ package com.shopwise.cart;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 import java.math.BigDecimal;
 
@@ -98,7 +99,7 @@ class CartIntegrationTests {
     @Test
     void cartCookieIsIssuedAndReused() {
         long variant = variantWithStock(2);
-        var first = mvc.post().uri("/api/cart/items")
+        var first = mvc.post().uri("/api/cart/items").with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"variantId\": %d, \"quantity\": 1}".formatted(variant))
                 .exchange();
@@ -114,7 +115,7 @@ class CartIntegrationTests {
 
     @Test
     void outOfStockReturnsConflictProblem() {
-        assertThat(mvc.post().uri("/api/cart/items")
+        assertThat(mvc.post().uri("/api/cart/items").with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"variantId\": %d, \"quantity\": 1}".formatted(soldOutVariant())))
                 .hasStatus(409)
