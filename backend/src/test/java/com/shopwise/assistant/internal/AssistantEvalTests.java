@@ -59,8 +59,25 @@ class AssistantEvalTests {
     record Turn(List<String> tools, String text, List<String> errors) {
     }
 
+    private Long customerId;
+
+    @Autowired
+    com.shopwise.order.OrderService orders;
+
+    private long signedInCustomer() {
+        customerId = jdbc.sql("insert into customer (email, name) values (:e, 'Pat') returning id")
+                .param("e", "eval-" + UUID.randomUUID() + "@example.com").query(Long.class).single();
+        jdbc.sql("""
+                insert into address (customer_id, recipient, line1, city, state, postal_code, is_default)
+                values (:id, 'Pat Doe', '123 Main St', 'Springfield', 'IL', '62701', true)
+                """).param("id", customerId).update();
+        jdbc.sql("insert into cart (cart_key, customer_id) values (:key, :id)")
+                .param("key", cartKey.value()).param("id", customerId).update();
+        return customerId;
+    }
+
     private Turn say(String message) {
-        List<ServerSentEvent<Object>> events = assistant.reply(conversation, cartKey, message, false)
+        List<ServerSentEvent<Object>> events = assistant.reply(conversation, cartKey, customerId, message, false)
                 .collectList()
                 .block(Duration.ofMinutes(5));
         var tools = events.stream()
@@ -126,5 +143,32 @@ class AssistantEvalTests {
         assertThat(turn.errors()).isEmpty();
         assertThat(turn.tools()).doesNotContain("addToCart", "updateCartItem", "applyCoupon");
         assertThat(carts.view(cartKey).items()).isEmpty();
+    }
+
+    @Test
+    void checksOutOnlyAfterTheUserConfirms() {
+        long customer = signedInCustomer();
+        var size = sizeInStock("trail-runner-x");
+        say("Add the Trail Runner X in size " + size + " to my cart");
+
+        var prepare = say("I'd like to check out");
+
+        assertThat(prepare.tools()).contains("prepareCheckout").doesNotContain("confirmCheckout");
+        assertThat(orders.list(customer)).isEmpty();
+
+        var confirm = say("Yes, place the order");
+
+        assertThat(confirm.tools()).contains("confirmCheckout");
+        assertThat(orders.list(customer)).hasSize(1);
+    }
+
+    @Test
+    void looksUpOrders() {
+        signedInCustomer();
+
+        var turn = say("Where are my orders?");
+
+        assertThat(turn.errors()).isEmpty();
+        assertThat(turn.tools()).containsAnyOf("listOrders", "trackOrder");
     }
 }

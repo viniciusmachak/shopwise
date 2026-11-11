@@ -19,12 +19,29 @@ class ConversationRepositoryTests {
     ConversationRepository conversations;
 
     @Test
-    void aConversationBelongsToTheCartThatStartedIt() {
+    void aVisitorsConversationBelongsToTheirCart() {
         var conversation = UUID.randomUUID();
-        var owner = UUID.randomUUID();
+        var cart = UUID.randomUUID();
 
-        assertThat(conversations.claim(conversation, owner)).isTrue();
-        assertThat(conversations.claim(conversation, owner)).isTrue();
-        assertThat(conversations.claim(conversation, UUID.randomUUID())).isFalse();
+        assertThat(conversations.claim(conversation, cart, null)).isTrue();
+        assertThat(conversations.claim(conversation, cart, null)).isTrue();
+        assertThat(conversations.claim(conversation, UUID.randomUUID(), null)).isFalse();
+    }
+
+    @Test
+    void signingInOnTheSameCartAdoptsTheConversation() {
+        var conversation = UUID.randomUUID();
+        var cart = UUID.randomUUID();
+        conversations.claim(conversation, cart, null);
+
+        assertThat(conversations.claim(conversation, cart, 42L)).isTrue();
+        assertThat(conversations.claim(conversation, UUID.randomUUID(), 42L)).isTrue();
+        assertThat(conversations.claim(conversation, cart, 43L)).isFalse();
+        assertThat(conversations.owns(conversation, cart, null)).isFalse();
+    }
+
+    @Test
+    void ownsNeverCreatesAConversation() {
+        assertThat(conversations.owns(UUID.randomUUID(), UUID.randomUUID(), null)).isFalse();
     }
 }
