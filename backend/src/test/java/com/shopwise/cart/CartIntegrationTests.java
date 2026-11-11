@@ -2,6 +2,7 @@ package com.shopwise.cart;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 import java.math.BigDecimal;
 
@@ -98,7 +99,7 @@ class CartIntegrationTests {
     @Test
     void cartCookieIsIssuedAndReused() {
         long variant = variantWithStock(2);
-        var first = mvc.post().uri("/api/cart/items")
+        var first = mvc.post().uri("/api/cart/items").with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"variantId\": %d, \"quantity\": 1}".formatted(variant))
                 .exchange();
@@ -114,12 +115,35 @@ class CartIntegrationTests {
 
     @Test
     void outOfStockReturnsConflictProblem() {
-        assertThat(mvc.post().uri("/api/cart/items")
+        assertThat(mvc.post().uri("/api/cart/items").with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"variantId\": %d, \"quantity\": 1}".formatted(soldOutVariant())))
                 .hasStatus(409)
                 .bodyJson()
                 .extractingPath("$.reason")
                 .isEqualTo("OUT_OF_STOCK");
+    }
+
+    @Test
+    void theAnonymousCartFollowsTheCustomerAfterSignUp() {
+        var added = mvc.post().uri("/api/cart/items").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"variantId\": %d, \"quantity\": 1}".formatted(variantWithStock(1)))
+                .exchange();
+        var cartCookie = added.getResponse().getCookie("shopwise_cart");
+
+        var registered = mvc.post().uri("/api/auth/register").with(csrf()).cookie(cartCookie)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"email": "cart-%s@example.com", "password": "correct horse", "name": "Pat"}
+                        """.formatted(java.util.UUID.randomUUID()))
+                .exchange();
+        var session = registered.getResponse().getCookie("SESSION");
+
+        assertThat(mvc.get().uri("/api/cart").cookie(session, cartCookie))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.itemCount")
+                .isEqualTo(1);
     }
 }

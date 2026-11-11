@@ -2,16 +2,19 @@ package com.shopwise.assistant.internal;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.codec.ServerSentEvent;
@@ -20,6 +23,8 @@ import org.springframework.stereotype.Service;
 import com.shopwise.cart.CartKey;
 import com.shopwise.cart.CartService;
 import com.shopwise.catalog.CatalogService;
+import com.shopwise.order.CheckoutService;
+import com.shopwise.order.OrderService;
 import com.shopwise.search.SearchService;
 
 import reactor.core.publisher.Flux;
@@ -34,11 +39,16 @@ class AssistantService {
     private final CatalogService catalog;
     private final CartService carts;
     private final AuditLog audit;
+    private final CheckoutService checkout;
+    private final OrderService orders;
+    private final PendingActions pending;
+    private final ChatMemoryRepository memoryRepository;
     private final String systemPrompt;
     private final String voicePrompt;
 
     AssistantService(RoutingChatModel chatModel, ChatMemoryRepository memoryRepository, SearchService search,
-            CatalogService catalog, CartService carts, AuditLog audit,
+            CatalogService catalog, CartService carts, AuditLog audit, CheckoutService checkout, OrderService orders,
+            PendingActions pending,
             @Value("classpath:prompts/system.md") Resource systemPrompt,
             @Value("classpath:prompts/voice.md") Resource voicePrompt) throws IOException {
         ChatMemory memory = MessageWindowChatMemory.builder()
@@ -52,19 +62,28 @@ class AssistantService {
         this.catalog = catalog;
         this.carts = carts;
         this.audit = audit;
+        this.checkout = checkout;
+        this.orders = orders;
+        this.pending = pending;
+        this.memoryRepository = memoryRepository;
         this.systemPrompt = systemPrompt.getContentAsString(StandardCharsets.UTF_8);
         this.voicePrompt = voicePrompt.getContentAsString(StandardCharsets.UTF_8);
     }
 
-    Flux<ServerSentEvent<Object>> reply(UUID conversationId, CartKey cartKey, String text, boolean voice) {
+    /**
+     * @param customerId the signed-in customer, captured from the request's security context
+     */
+    Flux<ServerSentEvent<Object>> reply(UUID conversationId, CartKey cartKey, @Nullable Long customerId, String text,
+            boolean voice) {
         var ui = new UiEvents();
         var tools = new ShopTools(search, catalog, carts, audit, cartKey, conversationId, ui);
+        var orderTools = new OrderTools(customerId, cartKey, conversationId, ui, checkout, orders, pending, audit);
         var system = voice ? systemPrompt + "\n\n" + voicePrompt : systemPrompt;
 
         Flux<ServerSentEvent<Object>> tokens = chatClient.prompt()
                 .system(system)
                 .user(text)
-                .tools(tools)
+                .tools(tools, orderTools)
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId.toString()))
                 .stream()
                 .content()
@@ -79,6 +98,18 @@ class AssistantService {
 
         return Flux.merge(ui.flux(), tokens)
                 .concatWith(Flux.just(event("done", Map.of("conversationId", conversationId))));
+    }
+
+    record HistoryMessage(String role, String text) {
+    }
+
+    /** The user and assistant messages of a conversation, oldest first. */
+    List<HistoryMessage> history(UUID conversationId) {
+        return memoryRepository.findByConversationId(conversationId.toString()).stream()
+                .filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
+                .filter(m -> m.getText() != null && !m.getText().isBlank())
+                .map(m -> new HistoryMessage(m.getMessageType() == MessageType.USER ? "user" : "assistant", m.getText()))
+                .toList();
     }
 
     static ServerSentEvent<Object> error(AssistantError error) {

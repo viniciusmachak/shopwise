@@ -27,6 +27,8 @@ class Cart {
 
     private String couponCode;
 
+    private Long customerId;
+
     private Instant createdAt = Instant.now();
 
     private Instant updatedAt = Instant.now();
@@ -40,6 +42,25 @@ class Cart {
 
     Cart(UUID cartKey) {
         this.cartKey = cartKey;
+    }
+
+    UUID getCartKey() {
+        return cartKey;
+    }
+
+    Long getCustomerId() {
+        return customerId;
+    }
+
+    void assignTo(long customerId) {
+        this.customerId = customerId;
+        touch();
+    }
+
+    void clear() {
+        items.clear();
+        couponCode = null;
+        touch();
     }
 
     List<CartItem> getItems() {

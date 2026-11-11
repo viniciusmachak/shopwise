@@ -4,6 +4,102 @@
  */
 
 export interface paths {
+    "/api/me/addresses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateAddress"];
+        post?: never;
+        delete: operations["deleteAddress"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["addresses"];
+        put?: never;
+        post: operations["addAddress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/addresses/{id}/default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["makeDefault"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["placeOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/checkout/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["quote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cart/items": {
         parameters: {
             query?: never;
@@ -36,6 +132,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["requestReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password-reset/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/pending-actions/{token}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/pending-actions/{token}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["discard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/assistant/conversations/{conversationId}/messages": {
         parameters: {
             query?: never;
@@ -52,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["update"];
+        trace?: never;
+    };
     "/api/cart/items/{itemId}": {
         parameters: {
             query?: never;
@@ -65,7 +273,7 @@ export interface paths {
         delete: operations["remove"];
         options?: never;
         head?: never;
-        patch: operations["update"];
+        patch: operations["update_1"];
         trace?: never;
     };
     "/api/search": {
@@ -116,6 +324,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["orders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["order"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/categories": {
         parameters: {
             query?: never;
@@ -148,13 +388,163 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["session"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["conversations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assistant/conversations/{conversationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["conversation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        CartKey: {
-            /** Format: uuid */
-            value: string;
+        AddressForm: {
+            recipient: string;
+            line1: string;
+            line2: string;
+            city: string;
+            state: string;
+            postalCode: string;
+            country: string;
+        };
+        AddressView: {
+            /** Format: int64 */
+            id: number;
+            recipient: string;
+            line1: string;
+            line2: string | null;
+            city: string;
+            state: string;
+            postalCode: string;
+            country: string;
+            isDefault: boolean;
+        };
+        Money: {
+            amount: number;
+            currency: string;
+        };
+        OrderLine: {
+            /** Format: int64 */
+            productId: number;
+            productName: string;
+            size: string | null;
+            color: string | null;
+            /** Format: int32 */
+            quantity: number;
+            unitPrice: components["schemas"]["Money"];
+            lineTotal: components["schemas"]["Money"];
+        };
+        OrderView: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            status: "PENDING_PAYMENT" | "PAID" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+            /** Format: date-time */
+            placedAt: string;
+            /** Format: date-time */
+            cancelledAt: string | null;
+            items: components["schemas"]["OrderLine"][];
+            subtotal: components["schemas"]["Money"];
+            couponCode: string | null;
+            discount: components["schemas"]["Money"];
+            /** @enum {string} */
+            shippingOption: "STANDARD" | "EXPRESS";
+            shipping: components["schemas"]["Money"];
+            total: components["schemas"]["Money"];
+            shippingAddress: components["schemas"]["ShippingAddress"];
+            cancellable: boolean;
+        };
+        ShippingAddress: {
+            recipient: string;
+            line1: string;
+            line2: string | null;
+            city: string;
+            state: string;
+            postalCode: string;
+            country: string;
+        };
+        PlaceOrderForm: {
+            /** Format: int64 */
+            addressId: number;
+            /** @enum {string} */
+            shipping: "STANDARD" | "EXPRESS";
+            cartHash: string;
+            idempotencyKey: string;
+        };
+        QuoteForm: {
+            /** Format: int64 */
+            addressId: number;
+            /** @enum {string} */
+            shipping: "STANDARD" | "EXPRESS";
+        };
+        CheckoutQuote: {
+            items: components["schemas"]["QuoteLine"][];
+            subtotal: components["schemas"]["Money"];
+            couponCode: string | null;
+            discount: components["schemas"]["Money"];
+            /** @enum {string} */
+            shippingOption: "STANDARD" | "EXPRESS";
+            shipping: components["schemas"]["Money"];
+            total: components["schemas"]["Money"];
+            shippingChoices: components["schemas"]["ShippingChoice"][];
+            address: components["schemas"]["AddressView"] | null;
+            cartHash: string;
+        };
+        QuoteLine: {
+            productName: string;
+            size: string | null;
+            /** Format: int32 */
+            quantity: number;
+            unitPrice: components["schemas"]["Money"];
+            lineTotal: components["schemas"]["Money"];
+        };
+        ShippingChoice: {
+            /** @enum {string} */
+            option: "STANDARD" | "EXPRESS";
+            label: string;
+            price: components["schemas"]["Money"];
         };
         AddItem: {
             /** Format: int64 */
@@ -162,16 +552,7 @@ export interface components {
             /** Format: int32 */
             quantity: number;
         };
-        CartView: {
-            items: components["schemas"]["Line"][];
-            /** Format: int32 */
-            itemCount: number;
-            subtotal: components["schemas"]["Money"];
-            couponCode: string | null;
-            discount: components["schemas"]["Money"];
-            total: components["schemas"]["Money"];
-        };
-        Line: {
+        CartLine: {
             /** Format: int64 */
             itemId: number;
             /** Format: int64 */
@@ -187,12 +568,49 @@ export interface components {
             lineTotal: components["schemas"]["Money"];
             available: boolean;
         };
-        Money: {
-            amount: number;
-            currency: string;
+        CartView: {
+            items: components["schemas"]["CartLine"][];
+            /** Format: int32 */
+            itemCount: number;
+            subtotal: components["schemas"]["Money"];
+            couponCode: string | null;
+            discount: components["schemas"]["Money"];
+            total: components["schemas"]["Money"];
         };
         ApplyCoupon: {
             code: string;
+        };
+        RegisterForm: {
+            /** Format: email */
+            email: string;
+            password: string;
+            name: string;
+        };
+        MeView: {
+            /** Format: int64 */
+            id: number;
+            email: string;
+            name: string;
+            hasPassword: boolean;
+            googleLinked: boolean;
+            admin: boolean;
+        };
+        ResetRequestForm: {
+            /** Format: email */
+            email: string;
+        };
+        ResetConfirmForm: {
+            token: string;
+            password: string;
+        };
+        LoginForm: {
+            email: string;
+            password: string;
+        };
+        ConfirmedAction: {
+            /** @enum {string} */
+            type: "CHECKOUT" | "CANCEL_ORDER";
+            order: components["schemas"]["OrderView"];
         };
         Message: {
             text: string;
@@ -200,6 +618,9 @@ export interface components {
             mode: "chat" | "voice";
         };
         ServerSentEventObject: unknown;
+        ProfileForm: {
+            name: string;
+        };
         UpdateItem: {
             /** Format: int32 */
             quantity: number;
@@ -257,9 +678,41 @@ export interface components {
             /** Format: int32 */
             stock: number;
         };
+        OrderSummary: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            status: "PENDING_PAYMENT" | "PAID" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+            /** Format: date-time */
+            placedAt: string;
+            /** Format: int32 */
+            itemCount: number;
+            total: components["schemas"]["Money"];
+        };
         CategoryView: {
             slug: string;
             name: string;
+        };
+        CsrfToken: {
+            parameterName: string;
+            token: string;
+            headerName: string;
+        };
+        SessionView: {
+            authenticated: boolean;
+            customer: components["schemas"]["MeView"];
+            googleEnabled: boolean;
+        };
+        ConversationSummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            title: string | null;
+        };
+        HistoryMessage: {
+            role: string;
+            text: string;
         };
     };
     responses: never;
@@ -270,11 +723,191 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    updateAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddressForm"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AddressView"];
+                };
+            };
+        };
+    };
+    deleteAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OrderView"];
+                };
+            };
+        };
+    };
+    addresses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AddressView"][];
+                };
+            };
+        };
+    };
+    addAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddressForm"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AddressView"];
+                };
+            };
+        };
+    };
+    makeDefault: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AddressView"];
+                };
+            };
+        };
+    };
+    placeOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaceOrderForm"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OrderView"];
+                };
+            };
+        };
+    };
+    quote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["QuoteForm"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CheckoutQuote"];
+                };
+            };
+        };
+    };
     add: {
         parameters: {
-            query: {
-                key: components["schemas"]["CartKey"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -298,9 +931,7 @@ export interface operations {
     };
     applyCoupon: {
         parameters: {
-            query: {
-                key: components["schemas"]["CartKey"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -324,9 +955,7 @@ export interface operations {
     };
     removeCoupon: {
         parameters: {
-            query: {
-                key: components["schemas"]["CartKey"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -344,11 +973,143 @@ export interface operations {
             };
         };
     };
+    register: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterForm"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MeView"];
+                };
+            };
+        };
+    };
+    requestReset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetRequestForm"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    confirmReset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetConfirmForm"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginForm"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MeView"];
+                };
+            };
+        };
+    };
+    confirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConfirmedAction"];
+                };
+            };
+        };
+    };
+    discard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     message: {
         parameters: {
-            query: {
-                cartKey: components["schemas"]["CartKey"];
-            };
+            query?: never;
             header?: never;
             path: {
                 conversationId: string;
@@ -372,11 +1133,53 @@ export interface operations {
             };
         };
     };
+    me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MeView"];
+                };
+            };
+        };
+    };
+    update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileForm"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MeView"];
+                };
+            };
+        };
+    };
     remove: {
         parameters: {
-            query: {
-                key: components["schemas"]["CartKey"];
-            };
+            query?: never;
             header?: never;
             path: {
                 itemId: number;
@@ -396,11 +1199,9 @@ export interface operations {
             };
         };
     };
-    update: {
+    update_1: {
         parameters: {
-            query: {
-                key: components["schemas"]["CartKey"];
-            };
+            query?: never;
             header?: never;
             path: {
                 itemId: number;
@@ -500,6 +1301,48 @@ export interface operations {
             };
         };
     };
+    orders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OrderSummary"][];
+                };
+            };
+        };
+    };
+    order: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OrderView"];
+                };
+            };
+        };
+    };
     categories: {
         parameters: {
             query?: never;
@@ -522,9 +1365,7 @@ export interface operations {
     };
     view: {
         parameters: {
-            query: {
-                key: components["schemas"]["CartKey"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -538,6 +1379,70 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CartView"];
+                };
+            };
+        };
+    };
+    session: {
+        parameters: {
+            query: {
+                csrf: components["schemas"]["CsrfToken"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SessionView"];
+                };
+            };
+        };
+    };
+    conversations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationSummary"][];
+                };
+            };
+        };
+    };
+    conversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["HistoryMessage"][];
                 };
             };
         };

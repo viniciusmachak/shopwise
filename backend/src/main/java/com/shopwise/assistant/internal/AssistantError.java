@@ -4,7 +4,7 @@ enum AssistantError {
 
     LLM_UNAVAILABLE("The assistant is resting right now. You can keep shopping normally."),
     RATE_LIMITED("You're sending messages very fast. Please wait a moment."),
-    FORBIDDEN("This conversation belongs to someone else."),
+    FORBIDDEN("This conversation belongs to someone else. Start a new one."),
     INTERNAL("Something went wrong. Please try again.");
 
     private final String message;

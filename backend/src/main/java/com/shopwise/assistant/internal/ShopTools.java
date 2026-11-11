@@ -85,29 +85,33 @@ class ShopTools {
         return CartSummary.of(cart);
     }
 
-    @Tool(description = "Add a product to the user's cart. The size is required when the product comes in several sizes.")
+    @Tool(description = """
+            Add a product to the user's cart. Give the product's name as shown in search results.
+            The size is required when the product comes in several sizes.""")
     Object addToCart(
-            @ToolParam(description = "The id of the exact product the user chose, copied from a searchProducts result") long productId,
+            @ToolParam(description = "Product name, e.g. Trail Runner X") String productName,
             @ToolParam(required = false, description = "Size, e.g. 10 for shoes or M for apparel") String size,
             @ToolParam(required = false, description = "How many, default 1") Integer quantity) {
         status("addToCart");
         int qty = quantity == null ? 1 : quantity;
         var args = new HashMap<String, Object>();
-        args.put("productId", productId);
+        args.put("productName", productName);
         args.put("size", size);
         args.put("quantity", qty);
 
-        var product = catalog.findProduct(productId);
-        if (product.isEmpty()) {
-            return reject("addToCart", args, "No product with id " + productId + ".");
+        var resolved = resolveProduct(productName);
+        if (resolved instanceof ToolError error) {
+            return reject("addToCart", args, error.error());
         }
-        var variants = product.get().variants();
+        var product = catalog.findProduct((Long) resolved).orElseThrow();
+        args.put("productId", product.id());
+        var variants = product.variants();
         var match = variants.size() == 1 && blankToNull(size) == null
                 ? variants.stream().findFirst()
                 : variants.stream().filter(v -> v.size() != null && v.size().equalsIgnoreCase(String.valueOf(size).trim())).findFirst();
         if (match.isEmpty()) {
             var sizes = variants.stream().map(v -> v.size()).toList();
-            return reject("addToCart", args, "Please pick a size. Available sizes: " + sizes + ".");
+            return reject("addToCart", args, "Please pick a size for " + product.name() + ". Available sizes: " + sizes + ".");
         }
         try {
             var cart = carts.addItem(cartKey, match.get().id(), qty);
@@ -120,14 +124,30 @@ class ShopTools {
         }
     }
 
-    @Tool(description = "Change the quantity of an item already in the cart. Quantity 0 removes it.")
+    @Tool(description = "Change how many of a product are in the cart. Quantity 0 removes it.")
     Object updateCartItem(
-            @ToolParam(description = "Item id from viewCart") long itemId,
+            @ToolParam(description = "Product name as it appears in the cart") String productName,
+            @ToolParam(required = false, description = "Size, when the cart has the product in several sizes") String size,
             @ToolParam(description = "New quantity") int quantity) {
         status("updateCartItem");
-        Map<String, Object> args = Map.of("itemId", itemId, "quantity", quantity);
+        var args = new HashMap<String, Object>();
+        args.put("productName", productName);
+        args.put("size", size);
+        args.put("quantity", quantity);
+        var wanted = normalize(productName);
+        var lines = carts.view(cartKey).items().stream()
+                .filter(l -> normalize(l.productName()).contains(wanted) || wanted.contains(normalize(l.productName())))
+                .filter(l -> blankToNull(size) == null || (l.size() != null && l.size().equalsIgnoreCase(size.trim())))
+                .toList();
+        if (lines.isEmpty()) {
+            return reject("updateCartItem", args, productName + " isn't in the cart.");
+        }
+        if (lines.size() > 1) {
+            return reject("updateCartItem", args, "The cart has " + productName + " in several sizes: "
+                    + lines.stream().map(l -> l.size()).toList() + ". Which one?");
+        }
         try {
-            var cart = carts.updateItem(cartKey, itemId, quantity);
+            var cart = carts.updateItem(cartKey, lines.getFirst().itemId(), quantity);
             audit.record(cartKey.value(), conversationId, "updateCartItem", args, true, null);
             ui.emit("ui.cart", cart);
             return CartSummary.of(cart);
@@ -135,6 +155,37 @@ class ShopTools {
         catch (CartException e) {
             return reject("updateCartItem", args, e.getMessage());
         }
+    }
+
+    /**
+     * Finds a product by the name the model gives. Tool results don't survive between turns,
+     * so the model often no longer has product ids, but it does have the names it showed.
+     * Returns the product id, or a ToolError asking the user to be more specific.
+     */
+    private Object resolveProduct(String name) {
+        if (name == null || name.isBlank()) {
+            return new ToolError("Which product? Please give its name.");
+        }
+        var wanted = normalize(name);
+        var candidates = search.search(SearchQuery.of(name));
+        var exact = candidates.stream().filter(p -> normalize(p.name()).equals(wanted)).findFirst();
+        if (exact.isPresent()) {
+            return exact.get().id();
+        }
+        var partial = candidates.stream()
+                .filter(p -> normalize(p.name()).contains(wanted) || wanted.contains(normalize(p.name())))
+                .toList();
+        if (partial.size() == 1) {
+            return partial.getFirst().id();
+        }
+        var names = candidates.stream().limit(3).map(ProductSummary::name).toList();
+        return new ToolError(names.isEmpty()
+                ? "No product called " + name + "."
+                : "Which product do you mean: " + String.join(", ", names) + "?");
+    }
+
+    private static String normalize(String s) {
+        return s == null ? "" : s.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim();
     }
 
     @Tool(description = "Apply a discount coupon code to the cart.")
@@ -202,7 +253,7 @@ class ShopTools {
             Map<String, Object> attributes, List<SizeOption> sizes) {
     }
 
-    record CartLine(long itemId, String product, String size, int quantity, BigDecimal lineTotal) {
+    record CartLine(String product, String size, int quantity, BigDecimal lineTotal) {
     }
 
     record CartSummary(List<CartLine> items, BigDecimal subtotal, String coupon, BigDecimal discount, BigDecimal total) {
@@ -210,7 +261,7 @@ class ShopTools {
         static CartSummary of(CartView cart) {
             return new CartSummary(
                     cart.items().stream()
-                            .map(l -> new CartLine(l.itemId(), l.productName(), l.size(), l.quantity(), l.lineTotal().amount()))
+                            .map(l -> new CartLine(l.productName(), l.size(), l.quantity(), l.lineTotal().amount()))
                             .toList(),
                     cart.subtotal().amount(), cart.couponCode(), cart.discount().amount(), cart.total().amount());
         }

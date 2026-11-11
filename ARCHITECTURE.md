@@ -123,11 +123,15 @@ When a product changes, a `ProductUpdated` listener re-embeds just that product.
 
 Login is our own, built on Spring Security: e-mail and password with BCrypt, a server-side session in an HttpOnly cookie, CSRF protection, and password reset by e-mail. "Sign in with Google" goes through Spring's OAuth2 client and links to an existing account with the same verified e-mail. Two roles: `CUSTOMER` and `ADMIN`.
 
-Payment is simulated until phase 4, behind a `PaymentGateway` interface. The fake gateway approves by default and can be told to fail, so error paths get tested. Stripe test mode replaces it later without touching other modules.
+Payment is simulated until phase 4, behind a `PaymentGateway` interface. The fake gateway approves by default and declines everything when `shopwise.payment.simulated.decline-all` is set, so error paths get tested. Stripe test mode replaces it later without touching other modules.
+
+Checkout works the same from the page and from the chat. A quote fingerprints the cart (items, quantities, prices, coupon); placing the order with a stale fingerprint fails, so the customer always pays the total they saw. Placing an order reserves stock, charges the payment and empties the cart in one transaction, and each checkout attempt carries an idempotency key. Standard shipping is $5 and free from $100 after discounts; express is $15. An order can be cancelled while it's paid but not shipped, which restocks the items and refunds the payment.
 
 ## Data
 
-The main tables: `customer`, `address`, `product`, `product_variant`, `inventory`, `product_embedding`, `cart`, `cart_item`, `order`, `order_item`, `payment`, `conversation`, `pending_action`, `audit_log`, and `app_setting` for runtime settings like the chat mode. Spring AI, Spring Batch, Spring Session and Modulith add their own tables to the same database. Flyway manages migrations.
+The main tables: `customer`, `address`, `password_reset_token`, `category`, `product`, `product_variant`, `inventory`, `search_document` (the search module's read model, with the embeddings), `cart`, `cart_item`, `coupon`, `orders`, `order_item`, `payment`, `assistant_conversation`, `pending_action` and `audit_log`. An `app_setting` table for runtime settings like the chat mode comes with the backoffice. Spring AI, Spring Session and Modulith add their own tables to the same database, and Spring Batch will too.
+
+Flyway manages migrations. Demo data lives in `db/seed`, numbered from V1000, and is only loaded outside production; out-of-order migrations are allowed so new schema changes still apply to databases that already have the seed.
 
 A cart can belong to a customer or to an anonymous cookie id; it merges into the customer's cart on sign-in. Order items copy the product name and price at purchase time.
 

@@ -14,19 +14,29 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 import com.shopwise.cart.CartKey;
+import com.shopwise.cart.CartService;
+import com.shopwise.customer.CurrentCustomer;
+import com.shopwise.customer.CustomerRef;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Resolves {@link CartKey} parameters from the cart cookie, issuing a new cookie when missing.
+ * Resolves {@link CartKey} parameters: the signed-in customer's cart, or the anonymous cart
+ * from the cookie. Updates the cookie whenever the resolved cart differs from it.
  */
 class CartKeyArgumentResolver implements HandlerMethodArgumentResolver {
 
     static final String COOKIE = "shopwise_cart";
 
     private static final String ATTRIBUTE = CartKey.class.getName();
+
+    private final CartService carts;
+
+    CartKeyArgumentResolver(CartService carts) {
+        this.carts = carts;
+    }
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
@@ -41,9 +51,11 @@ class CartKeyArgumentResolver implements HandlerMethodArgumentResolver {
         if (cached != null) {
             return cached;
         }
-        var key = fromCookie(request).orElseGet(() -> {
-            var created = CartKey.random();
-            var cookie = ResponseCookie.from(COOKIE, created.value().toString())
+        var cookieKey = fromCookie(request).orElse(null);
+        var customerId = CurrentCustomer.get().map(CustomerRef::id).orElse(null);
+        var key = carts.resolve(customerId, cookieKey);
+        if (!key.equals(cookieKey)) {
+            var cookie = ResponseCookie.from(COOKIE, key.value().toString())
                     .httpOnly(true)
                     .secure(request.isSecure())
                     .sameSite("Lax")
@@ -51,8 +63,7 @@ class CartKeyArgumentResolver implements HandlerMethodArgumentResolver {
                     .maxAge(Duration.ofDays(30))
                     .build();
             webRequest.getNativeResponse(HttpServletResponse.class).addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-            return created;
-        });
+        }
         request.setAttribute(ATTRIBUTE, key);
         return key;
     }

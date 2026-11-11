@@ -1,27 +1,54 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useRef, useState, type FormEvent } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { Link } from 'react-router'
 import { cartKey } from '../api/cart'
-import type { CartView, ProductSummary } from '../api/client'
+import { api, type CartView, type OrderView, type ProductSummary } from '../api/client'
+import { OrderCard } from '../components/OrderCard'
 import { ProductCard } from '../components/ProductCard'
 import { formatMoney, hasKey, t } from '../i18n'
 import { takeSentences, useVoice } from '../voice/useVoice'
-import { sendMessage, type AssistantEvent } from './assistant'
-import { loadConversationId, newConversationId } from './conversation'
+import { sendMessage, type AssistantEvent, type ConfirmRequest } from './assistant'
+import { ConfirmCard } from './ConfirmCard'
+import { loadConversationId, newConversationId, onConversationChange, setConversationId } from './conversation'
 
 type Message =
   | { id: number; role: 'user'; text: string }
-  | { id: number; role: 'assistant'; text: string; products?: ProductSummary[]; cart?: CartView; error?: string }
+  | {
+      id: number
+      role: 'assistant'
+      text: string
+      products?: ProductSummary[]
+      cart?: CartView
+      confirm?: ConfirmRequest
+      orders?: OrderView[]
+      signIn?: boolean
+      error?: string
+    }
 
 let nextId = 1
 
 export function ChatPanel() {
   const queryClient = useQueryClient()
-  const [conversationId, setConversationId] = useState(loadConversationId)
+  const [conversationId, setCurrentConversation] = useState(loadConversationId)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const abort = useRef<AbortController | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const history = useQuery({ queryKey: ['conversations'], queryFn: api.conversations, enabled: showHistory })
+
+  // Signing in or out starts a new conversation elsewhere; follow it.
+  useEffect(
+    () =>
+      onConversationChange((id) => {
+        setCurrentConversation((current) => {
+          if (current !== id) setMessages([])
+          return id
+        })
+      }),
+    [],
+  )
 
   const updateLast = useCallback((change: (m: Extract<Message, { role: 'assistant' }>) => Message) => {
     setMessages((all) => {
@@ -69,8 +96,19 @@ export function ChatPanel() {
             queryClient.setQueryData(cartKey, event.cart)
             updateLast((m) => ({ ...m, cart: event.cart }))
             break
+          case 'ui.confirm':
+            updateLast((m) => ({ ...m, confirm: event.request }))
+            break
+          case 'ui.order':
+            queryClient.invalidateQueries({ queryKey: ['orders'] })
+            updateLast((m) => ({ ...m, orders: [...(m.orders ?? []), event.order] }))
+            break
+          case 'ui.signin':
+            updateLast((m) => ({ ...m, signIn: true }))
+            break
           case 'error':
             updateLast((m) => ({ ...m, error: event.message }))
+            if (event.code === 'FORBIDDEN') newConversationId()
             break
           case 'done':
             break
@@ -107,17 +145,42 @@ export function ChatPanel() {
     abort.current?.abort()
     voice.cancelSpeech()
     setMessages([])
-    setConversationId(newConversationId())
+    newConversationId()
+  }
+
+  async function openConversation(id: string) {
+    abort.current?.abort()
+    voice.cancelSpeech()
+    setShowHistory(false)
+    const past = await api.conversation(id)
+    setConversationId(id)
+    setMessages(past.map((m) => ({ id: nextId++, role: m.role === 'user' ? 'user' : 'assistant', text: m.text })))
   }
 
   return (
     <aside className="chat" aria-label={t('chat.title')}>
       <div className="chat-header">
         <h2>{t('chat.title')}</h2>
+        <button type="button" onClick={() => setShowHistory((v) => !v)} aria-expanded={showHistory}>
+          {t('chat.history')}
+        </button>
         <button type="button" onClick={startOver}>
           {t('chat.newConversation')}
         </button>
       </div>
+
+      {showHistory && (
+        <ul className="chat-history" aria-label={t('chat.history')}>
+          {history.data?.length === 0 && <li className="muted">{t('chat.noHistory')}</li>}
+          {history.data?.map((c) => (
+            <li key={c.id}>
+              <button type="button" onClick={() => void openConversation(c.id)} aria-current={c.id === conversationId}>
+                {c.title}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <ol className="chat-messages" aria-live="polite">
         {messages.length === 0 && <li className="assistant">{t('chat.greeting')}</li>}
@@ -132,6 +195,14 @@ export function ChatPanel() {
             {m.role === 'assistant' && m.cart && (
               <p className="chat-cart">
                 {t('chat.cartUpdated', { count: m.cart.itemCount, total: formatMoney(m.cart.total) })}
+              </p>
+            )}
+            {m.role === 'assistant' && m.confirm && <ConfirmCard key={m.confirm.token} request={m.confirm} />}
+            {m.role === 'assistant' &&
+              m.orders?.map((order) => <OrderCard key={`${order.id}-${order.status}`} order={order} />)}
+            {m.role === 'assistant' && m.signIn && (
+              <p className="chat-signin">
+                <Link to="/sign-in">{t('chat.signIn')}</Link>
               </p>
             )}
             {m.role === 'assistant' && m.error && <p role="alert">{m.error}</p>}

@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -100,6 +101,62 @@ class DefaultCartService implements CartService {
                 .orElseGet(DefaultCartService::empty);
     }
 
+    @Override
+    public void clear(CartKey key) {
+        carts.findByCartKey(key.value()).ifPresent(cart -> {
+            cart.clear();
+            carts.saveAndFlush(cart);
+        });
+    }
+
+    @Override
+    public CartKey resolve(Long customerId, CartKey cookieKey) {
+        var cookieCart = cookieKey == null ? Optional.<Cart>empty() : carts.findByCartKey(cookieKey.value());
+
+        if (customerId == null) {
+            boolean ownedByCustomer = cookieCart.map(c -> c.getCustomerId() != null).orElse(false);
+            if (cookieKey == null || ownedByCustomer) {
+                return CartKey.random();
+            }
+            return cookieKey;
+        }
+
+        var own = carts.findByCustomerId(customerId);
+        var anonymous = cookieCart.filter(c -> c.getCustomerId() == null);
+        if (own.isEmpty()) {
+            var cart = anonymous.orElseGet(() -> new Cart(CartKey.random().value()));
+            cart.assignTo(customerId);
+            return new CartKey(carts.saveAndFlush(cart).getCartKey());
+        }
+        anonymous.ifPresent(source -> mergeInto(own.get(), source));
+        return new CartKey(own.get().getCartKey());
+    }
+
+    /** Moves items from an anonymous cart into the customer's, keeping within stock and limits. */
+    private void mergeInto(Cart target, Cart source) {
+        Map<Long, VariantView> variants = catalog.findVariants(
+                source.getItems().stream().map(CartItem::getVariantId).toList()).stream()
+                .collect(Collectors.toMap(VariantView::id, Function.identity()));
+        for (var item : source.getItems()) {
+            var variant = variants.get(item.getVariantId());
+            if (variant == null) {
+                continue;
+            }
+            var existing = target.findByVariant(item.getVariantId());
+            int wanted = existing.map(CartItem::getQuantity).orElse(0) + item.getQuantity();
+            int allowed = Math.min(wanted, Math.min(MAX_QUANTITY_PER_ITEM, variant.stock()));
+            if (allowed <= 0) {
+                continue;
+            }
+            existing.ifPresentOrElse(i -> i.setQuantity(allowed), () -> target.add(item.getVariantId(), allowed));
+        }
+        if (target.getCouponCode() == null && source.getCouponCode() != null) {
+            target.setCouponCode(source.getCouponCode());
+        }
+        carts.delete(source);
+        carts.saveAndFlush(target);
+    }
+
     private static void checkQuantity(VariantView variant, int quantity) {
         if (quantity > MAX_QUANTITY_PER_ITEM) {
             throw new CartException(Reason.INVALID_QUANTITY,
@@ -122,7 +179,7 @@ class DefaultCartService implements CartService {
                 .filter(item -> variants.containsKey(item.getVariantId()))
                 .map(item -> {
                     var v = variants.get(item.getVariantId());
-                    return new CartView.Line(item.getId(), v.id(), v.productId(), v.productName(), v.size(), v.color(),
+                    return new CartView.CartLine(item.getId(), v.id(), v.productId(), v.productName(), v.size(), v.color(),
                             v.price(), item.getQuantity(), v.price().times(item.getQuantity()),
                             v.stock() >= item.getQuantity());
                 })
@@ -143,7 +200,7 @@ class DefaultCartService implements CartService {
             }
         }
         var total = Money.usd(subtotal.amount().subtract(discount.amount()));
-        int count = lines.stream().mapToInt(CartView.Line::quantity).sum();
+        int count = lines.stream().mapToInt(CartView.CartLine::quantity).sum();
         return new CartView(lines, count, subtotal, couponCode, discount, total);
     }
 

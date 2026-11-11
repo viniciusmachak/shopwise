@@ -19,6 +19,11 @@ public class TestcontainersConfiguration {
                 .asCompatibleSubstituteFor("postgres"));
     }
 
+    @Bean
+    RecordingMailSender mailSender() {
+        return new RecordingMailSender();
+    }
+
     /** Evals turn this off to use the real Ollama embedding model. */
     @Bean
     @Primary

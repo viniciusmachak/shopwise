@@ -11,6 +11,9 @@ spring:
   flyway:
     # db/seed holds demo data for local development; production overrides this.
     locations: ${SHOPWISE_FLYWAY_LOCATIONS:classpath:db/migration,classpath:db/seed}
+    # Seed scripts are numbered from V1000, so new schema migrations land "before" them on
+    # databases that already have the demo data. Out-of-order lets those still apply.
+    out-of-order: true
   data:
     web:
       pageable:
@@ -22,8 +25,19 @@ spring:
   threads:
     virtual:
       enabled: true
+  session:
+    jdbc:
+      initialize-schema: always
+    timeout: 30d
+  mail:
+    host: ${SHOPWISE_MAIL_HOST:localhost}
+    port: ${SHOPWISE_MAIL_PORT:1025}
+    username: ${SHOPWISE_MAIL_USERNAME:}
+    password: ${SHOPWISE_MAIL_PASSWORD:}
   modulith:
     events:
+      # Delete handled publications: some events carry short-lived secrets (reset links).
+      completion-mode: delete
       jdbc:
         schema-initialization:
           enabled: true
@@ -61,6 +75,10 @@ management:
         include: health,info,prometheus
 
 shopwise:
+  mail:
+    from: ${SHOPWISE_MAIL_FROM:Shopwise <no-reply@shopwise.local>}
+  web:
+    frontend-url: ${SHOPWISE_FRONTEND_URL:http://localhost:5173}
   ai:
     chat-mode: ${SHOPWISE_AI_CHAT_MODE:local}
     fallback-to-local: ${SHOPWISE_AI_FALLBACK_TO_LOCAL:true}
