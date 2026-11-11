@@ -54,7 +54,7 @@ class DefaultCatalogService implements CatalogService {
 
     @Override
     public Optional<ProductDetail> findProduct(long productId) {
-        return products.findById(productId).map(p -> new ProductDetail(
+        return products.findById(productId).filter(Product::isActive).map(p -> new ProductDetail(
                 p.getId(),
                 p.getSlug(),
                 p.getName(),
@@ -78,6 +78,7 @@ class DefaultCatalogService implements CatalogService {
         return productIds.stream()
                 .map(byId::get)
                 .filter(Objects::nonNull)
+                .filter(Product::isActive)
                 .map(p -> toSummary(p, inStock.contains(p.getId())))
                 .toList();
     }
@@ -102,7 +103,7 @@ class DefaultCatalogService implements CatalogService {
 
     @Override
     public Optional<IndexableProduct> findIndexable(long productId) {
-        return products.findById(productId).map(p -> new IndexableProduct(
+        return products.findById(productId).filter(Product::isActive).map(p -> new IndexableProduct(
                 p.getId(),
                 p.getName(),
                 p.getBrand(),
@@ -135,6 +136,7 @@ class DefaultCatalogService implements CatalogService {
                 v.getSize(),
                 v.getColor(),
                 new Money(v.effectivePrice(), product.getCurrency()),
-                v.stock());
+                // Archived products can't be bought: they show as sold out in carts.
+                product.isActive() ? v.stock() : 0);
     }
 }
