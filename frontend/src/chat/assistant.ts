@@ -1,11 +1,18 @@
-import type { CartView, ProductSummary } from '../api/client'
+import { csrfHeaders, type CartView, type CheckoutQuote, type OrderView, type ProductSummary } from '../api/client'
 import { SseParser } from './sse'
+
+export type ConfirmRequest =
+  | { token: string; action: 'checkout'; summary: CheckoutQuote; expiresAt: string }
+  | { token: string; action: 'cancel'; summary: OrderView; expiresAt: string }
 
 export type AssistantEvent =
   | { type: 'token'; text: string }
   | { type: 'tool_status'; tool: string }
   | { type: 'ui.products'; products: ProductSummary[] }
   | { type: 'ui.cart'; cart: CartView }
+  | { type: 'ui.confirm'; request: ConfirmRequest }
+  | { type: 'ui.order'; order: OrderView }
+  | { type: 'ui.signin' }
   | { type: 'error'; code: string; message: string }
   | { type: 'done' }
 
@@ -21,7 +28,7 @@ export async function sendMessage({ conversationId, text, voice, signal, onEvent
   const response = await fetch(`/api/assistant/conversations/${conversationId}/messages`, {
     method: 'POST',
     credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+    headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream', ...csrfHeaders('POST') },
     body: JSON.stringify({ text, mode: voice ? 'voice' : 'chat' }),
     signal,
   })
@@ -59,6 +66,12 @@ export function toAssistantEvent(type: string, data: string): AssistantEvent | n
       return { type, products: payload as ProductSummary[] }
     case 'ui.cart':
       return { type, cart: payload as CartView }
+    case 'ui.confirm':
+      return body.action === 'checkout' || body.action === 'cancel' ? { type, request: payload as ConfirmRequest } : null
+    case 'ui.order':
+      return { type, order: payload as OrderView }
+    case 'ui.signin':
+      return { type }
     case 'error':
       return { type, code: String(body.code ?? ''), message: String(body.message ?? '') }
     case 'done':

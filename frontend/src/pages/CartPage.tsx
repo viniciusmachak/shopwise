@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useApplyCoupon, useCart, useRemoveCoupon, useUpdateCartItem } from '../api/cart'
 import { formatMoney, t } from '../i18n'
 
@@ -9,6 +9,7 @@ export function CartPage() {
   const applyCoupon = useApplyCoupon()
   const removeCoupon = useRemoveCoupon()
   const [code, setCode] = useState('')
+  const navigate = useNavigate()
 
   if (!cart.data) return null
   const c = cart.data
@@ -81,8 +82,8 @@ export function CartPage() {
               <strong>{formatMoney(c.total)}</strong>
             </dd>
           </dl>
-          <button type="button" disabled>
-            {t('cart.checkoutSoon')}
+          <button type="button" disabled={items.some((l) => !l.available)} onClick={() => navigate('/checkout')}>
+            {t('cart.checkout')}
           </button>
         </>
       )}

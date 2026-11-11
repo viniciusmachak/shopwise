@@ -10,12 +10,26 @@ export function loadConversationId(): string {
   return newConversationId()
 }
 
-export function newConversationId(): string {
-  const id = crypto.randomUUID()
+type Listener = (id: string) => void
+const listeners = new Set<Listener>()
+
+/** Lets the chat panel follow conversation changes made elsewhere (e.g. on sign-in). */
+export function onConversationChange(listener: Listener): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+
+export function setConversationId(id: string): void {
   try {
     localStorage.setItem(STORAGE_KEY, id)
   } catch {
     // keep the id in memory only
   }
+  listeners.forEach((l) => l(id))
+}
+
+export function newConversationId(): string {
+  const id = crypto.randomUUID()
+  setConversationId(id)
   return id
 }
