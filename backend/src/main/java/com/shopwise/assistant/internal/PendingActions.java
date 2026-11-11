@@ -35,7 +35,7 @@ class PendingActions {
     record Prepared(String token, Instant expiresAt) {
     }
 
-    record Confirmed(Type type, OrderView order) {
+    record ConfirmedAction(Type type, OrderView order) {
     }
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -89,7 +89,7 @@ class PendingActions {
      * waits and then gets the same result. If the action fails, the token stays usable.
      */
     @Transactional
-    Confirmed confirm(String token, long customerId) {
+    ConfirmedAction confirm(String token, long customerId) {
         var action = jdbc.sql("""
                 select type, cart_key, address_id, shipping, cart_hash, order_id, result_order_id, used_at, discarded_at,
                        expires_at < now() as expired
@@ -104,7 +104,7 @@ class PendingActions {
 
         var type = Type.valueOf(action.type());
         if (action.usedAt() != null && action.resultOrderId() != null) {
-            return new Confirmed(type, orders.find(customerId, action.resultOrderId()).orElseThrow());
+            return new ConfirmedAction(type, orders.find(customerId, action.resultOrderId()).orElseThrow());
         }
         if (action.discardedAt() != null) {
             throw new PendingActionException("This action was cancelled. Ask again if you still want it.");
@@ -123,7 +123,7 @@ class PendingActions {
                 .param("order", order.id())
                 .param("token", token)
                 .update();
-        return new Confirmed(type, order);
+        return new ConfirmedAction(type, order);
     }
 
     void discard(String token, long customerId) {

@@ -99,7 +99,7 @@ class CheckoutIntegrationTests {
         var order = place(checkout.quote(customer, cart, null, null), UUID.randomUUID().toString());
 
         assertThat(order.status()).isEqualTo(OrderStatus.PAID);
-        assertThat(order.items()).singleElement().extracting(OrderView.Line::quantity).isEqualTo(2);
+        assertThat(order.items()).singleElement().extracting(OrderView.OrderLine::quantity).isEqualTo(2);
         assertThat(order.cancellable()).isTrue();
         assertThat(fixtures.stock(variant)).isEqualTo(before - 2);
         assertThat(carts.view(cart).items()).isEmpty();

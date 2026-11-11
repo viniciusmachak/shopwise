@@ -58,7 +58,7 @@ class AssistantController {
     }
 
     @GetMapping("/conversations")
-    List<ConversationRepository.Summary> conversations(CartKey cartKey) {
+    List<ConversationRepository.ConversationSummary> conversations(CartKey cartKey) {
         return conversations.list(cartKey.value(), CurrentCustomer.get().map(CustomerRef::id).orElse(null));
     }
 
@@ -73,7 +73,7 @@ class AssistantController {
 
     /** The Confirm button: carries out a prepared action without going through the model. */
     @PostMapping("/pending-actions/{token}/confirm")
-    PendingActions.Confirmed confirm(@PathVariable String token) {
+    PendingActions.ConfirmedAction confirm(@PathVariable String token) {
         return pending.confirm(token, CurrentCustomer.require().id());
     }
 

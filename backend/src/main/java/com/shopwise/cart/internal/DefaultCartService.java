@@ -179,7 +179,7 @@ class DefaultCartService implements CartService {
                 .filter(item -> variants.containsKey(item.getVariantId()))
                 .map(item -> {
                     var v = variants.get(item.getVariantId());
-                    return new CartView.Line(item.getId(), v.id(), v.productId(), v.productName(), v.size(), v.color(),
+                    return new CartView.CartLine(item.getId(), v.id(), v.productId(), v.productName(), v.size(), v.color(),
                             v.price(), item.getQuantity(), v.price().times(item.getQuantity()),
                             v.stock() >= item.getQuantity());
                 })
@@ -200,7 +200,7 @@ class DefaultCartService implements CartService {
             }
         }
         var total = Money.usd(subtotal.amount().subtract(discount.amount()));
-        int count = lines.stream().mapToInt(CartView.Line::quantity).sum();
+        int count = lines.stream().mapToInt(CartView.CartLine::quantity).sum();
         return new CartView(lines, count, subtotal, couponCode, discount, total);
     }
 

@@ -3,8 +3,11 @@ package com.shopwise;
 import java.util.ArrayList;
 
 import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springdoc.core.utils.SpringDocUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.shopwise.cart.CartKey;
 
 /**
  * API DTOs are records whose fields are always present. Marks every property as required
@@ -12,6 +15,11 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration(proxyBeanMethods = false)
 class OpenApiConfiguration {
+
+    static {
+        // Resolved from the cart cookie on the server, not a request parameter.
+        SpringDocUtils.getConfig().addRequestWrapperToIgnore(CartKey.class);
+    }
 
     @Bean
     OpenApiCustomizer requireAllProperties() {

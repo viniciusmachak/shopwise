@@ -12,7 +12,7 @@ import com.shopwise.customer.AddressView;
  * prices this quote was made from; placing the order with a stale hash fails.
  */
 public record CheckoutQuote(
-        List<Line> items,
+        List<QuoteLine> items,
         Money subtotal,
         @Nullable String couponCode,
         Money discount,
@@ -23,7 +23,7 @@ public record CheckoutQuote(
         @Nullable AddressView address,
         String cartHash) {
 
-    public record Line(String productName, @Nullable String size, int quantity, Money unitPrice, Money lineTotal) {
+    public record QuoteLine(String productName, @Nullable String size, int quantity, Money unitPrice, Money lineTotal) {
     }
 
     public record ShippingChoice(ShippingOption option, String label, Money price) {

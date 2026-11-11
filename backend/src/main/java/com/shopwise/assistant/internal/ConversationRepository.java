@@ -24,7 +24,7 @@ class ConversationRepository {
     record Owner(UUID cartKey, @Nullable Long customerId) {
     }
 
-    record Summary(UUID id, Instant createdAt, @Nullable String title) {
+    record ConversationSummary(UUID id, Instant createdAt, @Nullable String title) {
     }
 
     /**
@@ -75,7 +75,7 @@ class ConversationRepository {
     }
 
     /** Conversations with at least one message, newest first, titled by their first question. */
-    List<Summary> list(UUID cartKey, @Nullable Long customerId) {
+    List<ConversationSummary> list(UUID cartKey, @Nullable Long customerId) {
         return jdbc.sql("""
                 select c.id, c.created_at,
                        (select left(m.content, 80) from spring_ai_chat_memory m
@@ -89,7 +89,7 @@ class ConversationRepository {
                 """)
                 .param("customer", customerId)
                 .param("cartKey", cartKey)
-                .query(Summary.class)
+                .query(ConversationSummary.class)
                 .list()
                 .stream()
                 .filter(s -> s.title() != null)

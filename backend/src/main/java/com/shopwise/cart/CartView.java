@@ -7,14 +7,14 @@ import java.util.List;
 import com.shopwise.catalog.Money;
 
 public record CartView(
-        List<Line> items,
+        List<CartLine> items,
         int itemCount,
         Money subtotal,
         @Nullable String couponCode,
         Money discount,
         Money total) {
 
-    public record Line(
+    public record CartLine(
             long itemId,
             long variantId,
             long productId,

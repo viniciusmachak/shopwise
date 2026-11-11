@@ -12,7 +12,7 @@ public record OrderView(
         OrderStatus status,
         Instant placedAt,
         @Nullable Instant cancelledAt,
-        List<Line> items,
+        List<OrderLine> items,
         Money subtotal,
         @Nullable String couponCode,
         Money discount,
@@ -22,7 +22,7 @@ public record OrderView(
         ShippingAddress shippingAddress,
         boolean cancellable) {
 
-    public record Line(long productId, String productName, @Nullable String size, @Nullable String color,
+    public record OrderLine(long productId, String productName, @Nullable String size, @Nullable String color,
             int quantity, Money unitPrice, Money lineTotal) {
     }
 

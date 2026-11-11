@@ -69,7 +69,7 @@ class CartOwnershipTests {
 
         assertThat(resolved).isEqualTo(own);
         var cart = carts.view(own);
-        assertThat(cart.items()).extracting(CartView.Line::variantId, CartView.Line::quantity)
+        assertThat(cart.items()).extracting(CartView.CartLine::variantId, CartView.CartLine::quantity)
                 .containsExactlyInAnyOrder(org.assertj.core.groups.Tuple.tuple(shared, 3),
                         org.assertj.core.groups.Tuple.tuple(onlyAnonymous, 1));
         assertThat(cart.couponCode()).isEqualTo("WELCOME10");
@@ -90,7 +90,7 @@ class CartOwnershipTests {
 
         carts.resolve(customer, anonymous);
 
-        assertThat(carts.view(own).items()).singleElement().extracting(CartView.Line::quantity).isEqualTo(stock);
+        assertThat(carts.view(own).items()).singleElement().extracting(CartView.CartLine::quantity).isEqualTo(stock);
     }
 
     @Test

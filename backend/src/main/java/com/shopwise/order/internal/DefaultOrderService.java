@@ -73,7 +73,7 @@ class DefaultOrderService implements CheckoutService, OrderService {
         var shipping = shippingRates.price(option, merchandise);
         var total = Money.usd(merchandise.add(shipping.amount()));
         var lines = cart.items().stream()
-                .map(l -> new CheckoutQuote.Line(l.productName(), l.size(), l.quantity(), l.unitPrice(), l.lineTotal()))
+                .map(l -> new CheckoutQuote.QuoteLine(l.productName(), l.size(), l.quantity(), l.unitPrice(), l.lineTotal()))
                 .toList();
         return new CheckoutQuote(lines, cart.subtotal(), cart.couponCode(), cart.discount(), option, shipping, total,
                 shippingRates.choices(merchandise), address, cartHash(cart));
@@ -187,7 +187,7 @@ class DefaultOrderService implements CheckoutService, OrderService {
 
     private OrderView toView(Order o) {
         var items = o.items.stream()
-                .map(i -> new OrderView.Line(i.productId, i.productName, i.size, i.color, i.quantity,
+                .map(i -> new OrderView.OrderLine(i.productId, i.productName, i.size, i.color, i.quantity,
                         new Money(i.unitPrice, o.currency), new Money(i.lineTotal, o.currency)))
                 .toList();
         var address = new OrderView.ShippingAddress(o.shipRecipient, o.shipLine1, o.shipLine2, o.shipCity, o.shipState,

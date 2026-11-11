@@ -11,6 +11,9 @@ spring:
   flyway:
     # db/seed holds demo data for local development; production overrides this.
     locations: ${SHOPWISE_FLYWAY_LOCATIONS:classpath:db/migration,classpath:db/seed}
+    # Seed scripts are numbered from V1000, so new schema migrations land "before" them on
+    # databases that already have the demo data. Out-of-order lets those still apply.
+    out-of-order: true
   data:
     web:
       pageable:
