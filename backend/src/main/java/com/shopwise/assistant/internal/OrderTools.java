@@ -47,8 +47,9 @@ class OrderTools {
     }
 
     @Tool(description = """
-            Start checking out the cart. Returns a summary and a confirmation token, and shows the user a Confirm button.
-            Always tell the user the total and ask them to confirm. Never place the order in the same turn.""")
+            Use when the user wants to check out, pay, buy what's in the cart or place an order. Returns a summary and a
+            confirmation token, and shows the user a Confirm button. Tell the user the total and ask them to confirm.
+            Never place the order in the same turn.""")
     Object prepareCheckout(
             @ToolParam(required = false, description = "standard or express, default standard") String shipping) {
         status("prepareCheckout");
