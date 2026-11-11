@@ -72,6 +72,8 @@ management:
         include: health,info,prometheus
 
 shopwise:
+  mail:
+    from: ${SHOPWISE_MAIL_FROM:Shopwise <no-reply@shopwise.local>}
   web:
     frontend-url: ${SHOPWISE_FRONTEND_URL:http://localhost:5173}
   ai:
