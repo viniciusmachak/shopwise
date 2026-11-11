@@ -107,3 +107,5 @@ GitHub Actions.
 - One commit per logical piece of work: a feature slice, a fix, a refactor. Don't mix unrelated changes in one commit, and don't split one change across several half-working commits. Each commit builds and passes tests.
 - Commit messages follow Conventional Commits (`feat(cart): merge anonymous cart on sign-in`).
 - A pull request can hold several commits, as long as they belong to the same feature. CI must be green before merging.
+- Keep pull requests small: aim for under ~1,000 changed lines, not counting generated files. Split a roadmap phase into several PRs by feature, each one working and testable on its own, with its backend, frontend and docs together.
+- Never commit straight to `main`. Start each PR from an up-to-date `main` after the previous one is merged.
