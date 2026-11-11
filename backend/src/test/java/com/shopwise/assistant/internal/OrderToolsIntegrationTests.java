@@ -57,12 +57,14 @@ class OrderToolsIntegrationTests {
     long customer;
     CartKey cart;
     UiEvents ui;
+    UUID conversation;
 
     @BeforeEach
     void setUp() {
         customer = newCustomer(true);
         cart = carts.resolve(customer, null);
         ui = new UiEvents();
+        conversation = UUID.randomUUID();
     }
 
     private long newCustomer(boolean withAddress) {
@@ -78,13 +80,18 @@ class OrderToolsIntegrationTests {
     }
 
     private OrderTools tools(@Nullable Long customerId, CartKey cartKey) {
-        return new OrderTools(customerId, cartKey, UUID.randomUUID(), ui, checkout, orders, pending, audit);
+        return new OrderTools(customerId, cartKey, conversation, ui, checkout, orders, pending, audit);
     }
 
     private void addSomething(CartKey key) {
         long variant = jdbc.sql("select variant_id from inventory where quantity >= 3 order by variant_id desc limit 1")
                 .query(Long.class).single();
         carts.addItem(key, variant, 1);
+    }
+
+    private String latestToken() {
+        return jdbc.sql("select token from pending_action where customer_id = :c order by created_at desc limit 1")
+                .param("c", customer).query(String.class).single();
     }
 
     private List<String> uiEvents() {
@@ -121,64 +128,80 @@ class OrderToolsIntegrationTests {
         assertThat(summary.shippingSpeed()).isEqualTo("express");
         assertThat(orders.list(customer)).isEmpty();
 
-        var placed = (OrderInfo) tools.confirmCheckout(summary.token());
-        var again = (OrderInfo) tools.confirmCheckout(summary.token());
+        var placed = (OrderInfo) tools.confirmCheckout();
+        var again = tools.confirmCheckout();
 
         assertThat(placed.status()).isEqualTo(OrderStatus.PAID);
-        assertThat(again.orderId()).isEqualTo(placed.orderId());
+        assertThat(again).isInstanceOf(ToolError.class);
         assertThat(orders.list(customer)).hasSize(1);
         assertThat(carts.view(cart).items()).isEmpty();
-        assertThat(uiEvents()).containsExactly("ui.confirm", "ui.order", "ui.order");
+        assertThat(uiEvents()).containsExactly("ui.confirm", "ui.order");
+    }
+
+    @Test
+    void confirmingWithoutASummaryInThisConversationDoesNothing() {
+        addSomething(cart);
+
+        assertThat(tools(customer, cart).confirmCheckout()).isInstanceOf(ToolError.class);
+
+        tools(customer, cart).prepareCheckout(null);
+        conversation = UUID.randomUUID();
+        assertThat(tools(customer, cart).confirmCheckout()).isInstanceOf(ToolError.class);
+        assertThat(orders.list(customer)).isEmpty();
     }
 
     @Test
     void anotherCustomerCannotUseTheToken() {
         addSomething(cart);
-        var summary = (CheckoutSummary) tools(customer, cart).prepareCheckout(null);
+        tools(customer, cart).prepareCheckout(null);
         long stranger = newCustomer(true);
 
-        assertThat(tools(stranger, carts.resolve(stranger, null)).confirmCheckout(summary.token()))
-                .isInstanceOf(ToolError.class);
+        assertThatThrownBy(() -> pending.confirm(latestToken(), stranger)).isInstanceOf(PendingActionException.class);
+        assertThat(tools(stranger, carts.resolve(stranger, null)).confirmCheckout()).isInstanceOf(ToolError.class);
         assertThat(orders.list(customer)).isEmpty();
     }
 
     @Test
     void expiredAndDiscardedTokensAreRejected() {
         addSomething(cart);
-        var expired = (CheckoutSummary) tools(customer, cart).prepareCheckout(null);
+        tools(customer, cart).prepareCheckout(null);
+        var expired = latestToken();
         jdbc.sql("update pending_action set expires_at = now() - interval '1 minute' where token = :t")
-                .param("t", expired.token()).update();
-        var discarded = (CheckoutSummary) tools(customer, cart).prepareCheckout(null);
-        pending.discard(discarded.token(), customer);
+                .param("t", expired).update();
 
-        assertThat(tools(customer, cart).confirmCheckout(expired.token())).isInstanceOfSatisfying(ToolError.class,
-                e -> assertThat(e.error()).contains("expired"));
-        assertThat(tools(customer, cart).confirmCheckout(discarded.token())).isInstanceOf(ToolError.class);
+        assertThat(tools(customer, cart).confirmCheckout()).isInstanceOf(ToolError.class);
+        assertThatThrownBy(() -> pending.confirm(expired, customer)).hasMessageContaining("expired");
+
+        tools(customer, cart).prepareCheckout(null);
+        pending.discard(latestToken(), customer);
+
+        assertThat(tools(customer, cart).confirmCheckout()).isInstanceOf(ToolError.class);
         assertThat(orders.list(customer)).isEmpty();
     }
 
     @Test
     void aFailedConfirmationLeavesTheTokenUsable() {
         addSomething(cart);
-        var summary = (CheckoutSummary) tools(customer, cart).prepareCheckout(null);
+        tools(customer, cart).prepareCheckout(null);
         addSomething(cart);
 
-        assertThat(tools(customer, cart).confirmCheckout(summary.token())).isInstanceOfSatisfying(ToolError.class,
+        assertThat(tools(customer, cart).confirmCheckout()).isInstanceOfSatisfying(ToolError.class,
                 e -> assertThat(e.error()).contains("changed"));
         assertThat(jdbc.sql("select used_at is null from pending_action where token = :t")
-                .param("t", summary.token()).query(Boolean.class).single()).isTrue();
+                .param("t", latestToken()).query(Boolean.class).single()).isTrue();
     }
 
     @Test
     void cancellingAlsoNeedsConfirmation() {
         addSomething(cart);
         var tools = tools(customer, cart);
-        var placed = (OrderInfo) tools.confirmCheckout(((CheckoutSummary) tools.prepareCheckout(null)).token());
+        tools.prepareCheckout(null);
+        var placed = (OrderInfo) tools.confirmCheckout();
 
-        var cancel = (CancelSummary) tools.prepareCancel(placed.orderId());
+        assertThat(tools.prepareCancel(placed.orderId())).isInstanceOf(CancelSummary.class);
         assertThat(orders.find(customer, placed.orderId()).orElseThrow().status()).isEqualTo(OrderStatus.PAID);
 
-        var cancelled = (OrderInfo) tools.confirmCancel(cancel.token());
+        var cancelled = (OrderInfo) tools.confirmCancel();
 
         assertThat(cancelled.status()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(tools.prepareCancel(placed.orderId())).isInstanceOfSatisfying(ToolError.class,
@@ -189,7 +212,8 @@ class OrderToolsIntegrationTests {
     void ordersAreOnlyVisibleToTheirOwner() {
         addSomething(cart);
         var tools = tools(customer, cart);
-        var placed = (OrderInfo) tools.confirmCheckout(((CheckoutSummary) tools.prepareCheckout(null)).token());
+        tools.prepareCheckout(null);
+        var placed = (OrderInfo) tools.confirmCheckout();
         long stranger = newCustomer(true);
 
         assertThat(tools(stranger, carts.resolve(stranger, null)).trackOrder(placed.orderId()))

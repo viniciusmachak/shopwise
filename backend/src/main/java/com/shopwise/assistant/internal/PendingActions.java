@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.jspecify.annotations.Nullable;
@@ -124,6 +125,24 @@ class PendingActions {
                 .param("token", token)
                 .update();
         return new ConfirmedAction(type, order);
+    }
+
+    /**
+     * The newest unused, unexpired action of this type that was shown in this conversation.
+     * The model doesn't keep tool results between turns, so it can't repeat the token itself.
+     */
+    Optional<String> latestShown(long customerId, UUID conversationId, Type type) {
+        return jdbc.sql("""
+                select token from pending_action
+                where customer_id = :customer and conversation_id = :conversation and type = :type
+                  and used_at is null and discarded_at is null and expires_at > now()
+                order by created_at desc limit 1
+                """)
+                .param("customer", customerId)
+                .param("conversation", conversationId)
+                .param("type", type.name())
+                .query(String.class)
+                .optional();
     }
 
     void discard(String token, long customerId) {

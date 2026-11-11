@@ -20,7 +20,8 @@ import com.shopwise.order.ShippingOption;
 
 /**
  * Checkout and order tools. Placing and cancelling orders always goes through a
- * prepare step that shows the customer a summary and a confirm step with its token.
+ * prepare step that shows the customer a summary, and a confirm step that only acts on a
+ * summary shown in the same conversation.
  * The customer comes from the request's security context, never from the model.
  */
 class OrderTools {
@@ -47,8 +48,8 @@ class OrderTools {
     }
 
     @Tool(description = """
-            Use when the user wants to check out, pay, buy what's in the cart or place an order. Returns a summary and a
-            confirmation token, and shows the user a Confirm button. Tell the user the total and ask them to confirm.
+            Use when the user wants to check out, pay, buy what's in the cart or place an order. Returns a summary and
+            shows the user a Confirm button. Tell the user the total and ask them to confirm.
             Never place the order in the same turn.""")
     Object prepareCheckout(
             @ToolParam(required = false, description = "standard or express, default standard") String shipping) {
@@ -72,16 +73,16 @@ class OrderTools {
                 "action", "checkout",
                 "summary", quote,
                 "expiresAt", prepared.expiresAt()));
-        return new CheckoutSummary(prepared.token(),
+        return new CheckoutSummary(
                 quote.items().stream().mapToInt(l -> l.quantity()).sum(),
                 quote.total().amount(), quote.shipping().amount(), option.name().toLowerCase(),
                 quote.address().shortLabel(),
                 "Ask the user to confirm. Call confirmCheckout only after they clearly say yes.");
     }
 
-    @Tool(description = "Place the order the user just confirmed. Only call it after the user clearly said yes to the checkout summary.")
-    Object confirmCheckout(@ToolParam(description = "The token returned by prepareCheckout") String token) {
-        return confirm("confirmCheckout", token);
+    @Tool(description = "Place the order whose summary was shown to the user. Only call it after the user clearly said yes to that summary.")
+    Object confirmCheckout() {
+        return confirmLatest("confirmCheckout", PendingActions.Type.CHECKOUT);
     }
 
     @Tool(description = "List the user's recent orders.")
@@ -110,7 +111,7 @@ class OrderTools {
     }
 
     @Tool(description = """
-            Start cancelling an order. Returns a confirmation token and shows the user a Confirm button.
+            Start cancelling an order. Returns a summary and shows the user a Confirm button.
             Ask the user to confirm. Never cancel in the same turn.""")
     Object prepareCancel(@ToolParam(description = "Order number") long orderId) {
         status("prepareCancel");
@@ -132,22 +133,32 @@ class OrderTools {
                 "action", "cancel",
                 "summary", order.get(),
                 "expiresAt", prepared.expiresAt()));
-        return new CancelSummary(prepared.token(), orderId, order.get().total().amount(),
+        return new CancelSummary(orderId, order.get().total().amount(),
                 "Ask the user to confirm. Call confirmCancel only after they clearly say yes.");
     }
 
-    @Tool(description = "Cancel the order the user just confirmed. Only call it after the user clearly said yes.")
-    Object confirmCancel(@ToolParam(description = "The token returned by prepareCancel") String token) {
-        return confirm("confirmCancel", token);
+    @Tool(description = "Cancel the order whose cancellation summary was shown to the user. Only call it after the user clearly said yes.")
+    Object confirmCancel() {
+        return confirmLatest("confirmCancel", PendingActions.Type.CANCEL_ORDER);
     }
 
-    private Object confirm(String tool, String token) {
+    /**
+     * Confirms the newest summary shown in this conversation. There is never a confirm
+     * without a prepare: if nothing was prepared here, nothing happens.
+     */
+    private Object confirmLatest(String tool, PendingActions.Type type) {
         status(tool);
         if (customerId == null) {
             return signInRequired("continue");
         }
+        var token = pending.latestShown(customerId, conversationId, type);
+        if (token.isEmpty()) {
+            return new ShopTools.ToolError(type == PendingActions.Type.CHECKOUT
+                    ? "There's no checkout summary waiting for confirmation. Call prepareCheckout first."
+                    : "There's no cancellation waiting for confirmation. Call prepareCancel first.");
+        }
         try {
-            var confirmed = pending.confirm(token == null ? "" : token.trim(), customerId);
+            var confirmed = pending.confirm(token.get(), customerId);
             audit.record(cartKey.value(), conversationId, tool, Map.of("orderId", confirmed.order().id()), true, null);
             ui.emit("ui.order", confirmed.order());
             return OrderInfo.of(confirmed.order());
@@ -167,11 +178,11 @@ class OrderTools {
         ui.emit("tool_status", Map.of("tool", tool, "state", "running"));
     }
 
-    record CheckoutSummary(String token, int items, BigDecimal total, BigDecimal shipping, String shippingSpeed,
+    record CheckoutSummary(int items, BigDecimal total, BigDecimal shipping, String shippingSpeed,
             String shipTo, String next) {
     }
 
-    record CancelSummary(String token, long orderId, BigDecimal refund, String next) {
+    record CancelSummary(long orderId, BigDecimal refund, String next) {
     }
 
     record OrderBrief(long orderId, OrderStatus status, Instant placedAt, int items, BigDecimal total) {

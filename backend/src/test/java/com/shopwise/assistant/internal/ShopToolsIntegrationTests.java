@@ -61,7 +61,7 @@ class ShopToolsIntegrationTests {
         long id = productId("trail-runner-x");
         var size = sizeInStock(id);
 
-        var result = tools().addToCart(id, size, 1);
+        var result = tools().addToCart("Trail Runner X", size, 1);
 
         assertThat(result).isInstanceOf(CartSummary.class);
         assertThat(carts.view(cartKey).items()).singleElement().satisfies(line -> {
@@ -72,7 +72,7 @@ class ShopToolsIntegrationTests {
 
     @Test
     void asksForASizeWhenItIsMissing() {
-        var result = tools().addToCart(productId("trail-runner-x"), null, 1);
+        var result = tools().addToCart("Trail Runner X", null, 1);
 
         assertThat(result).isInstanceOfSatisfying(ToolError.class,
                 e -> assertThat(e.error()).startsWith("Please pick a size"));
@@ -89,13 +89,15 @@ class ShopToolsIntegrationTests {
                 order by p.id limit 1
                 """).query(Long.class).single();
 
-        assertThat(tools().addToCart(backpackInStock, null, 1)).isInstanceOf(CartSummary.class);
+        var name = jdbc.sql("select name from product where id = :id").param("id", backpackInStock)
+                .query(String.class).single();
+        assertThat(tools().addToCart(name, null, 1)).isInstanceOf(CartSummary.class);
     }
 
     @Test
     void cartChangesAreAudited() {
         long id = productId("trail-runner-x");
-        tools().addToCart(id, sizeInStock(id), 1);
+        tools().addToCart("Trail Runner X", sizeInStock(id), 1);
         tools().applyCoupon("NOPE");
 
         var outcomes = jdbc.sql("select action || ':' || outcome from audit_log where conversation_id = :id order by id")
@@ -129,5 +131,25 @@ class ShopToolsIntegrationTests {
 
         assertThat(byName.products()).extracting(ShopTools.ProductBrief::name).contains("Stormguard GTX Runner");
         assertThat(unknown.products()).extracting(ShopTools.ProductBrief::name).contains("Stormguard GTX Runner");
+    }
+
+    @Test
+    void findsProductsByNameAndAsksWhenTheNameIsAmbiguous() {
+        long id = productId("trail-runner-x");
+
+        assertThat(tools().addToCart("trail runner x", sizeInStock(id), 1)).isInstanceOf(CartSummary.class);
+        assertThat(tools().addToCart("Runner", "9", 1)).isInstanceOfSatisfying(ToolError.class,
+                e -> assertThat(e.error()).startsWith("Which product do you mean"));
+    }
+
+    @Test
+    void changesQuantitiesByProductName() {
+        long id = productId("trail-runner-x");
+        tools().addToCart("Trail Runner X", sizeInStock(id), 1);
+
+        var result = tools().updateCartItem("Trail Runner X", null, 0);
+
+        assertThat(result).isInstanceOf(CartSummary.class);
+        assertThat(carts.view(cartKey).items()).isEmpty();
     }
 }
