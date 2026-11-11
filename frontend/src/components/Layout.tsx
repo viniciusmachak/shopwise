@@ -40,6 +40,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <>
             <Link to="/orders">{t('nav.orders')}</Link>
             <Link to="/account">{t('nav.account')}</Link>
+            {session.data.customer?.admin && <Link to="/admin/products">{t('nav.admin')}</Link>}
             <button type="button" onClick={() => logout.mutate(undefined, { onSuccess: () => navigate('/') })}>
               {t('nav.signOut')}
             </button>

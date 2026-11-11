@@ -20,6 +20,11 @@ export type OrderSummary = Schemas['OrderSummary']
 export type ConversationSummary = Schemas['ConversationSummary']
 export type HistoryMessage = Schemas['HistoryMessage']
 export type ConfirmedAction = Schemas['ConfirmedAction']
+export type AdminProductRow = Schemas['AdminProductRow']
+export type AdminProductView = Schemas['AdminProductView']
+export type AdminVariant = Schemas['Variant']
+export type ProductForm = Schemas['ProductForm']
+export type VariantForm = Schemas['VariantForm']
 
 export class ApiError extends Error {
   readonly status: number
@@ -125,6 +130,24 @@ export const api = {
 
   conversations: () => request<ConversationSummary[]>('/api/assistant/conversations'),
   conversation: (id: string) => request<HistoryMessage[]>(`/api/assistant/conversations/${id}`),
+  admin: {
+    products: (q: string, includeArchived: boolean) =>
+      request<AdminProductRow[]>(`/api/admin/products${query({ q, includeArchived })}`),
+    product: (id: number) => request<AdminProductView>(`/api/admin/products/${id}`),
+    createProduct: (form: ProductForm) => post<AdminProductView>('/api/admin/products', form),
+    updateProduct: (id: number, form: ProductForm) =>
+      request<AdminProductView>(`/api/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(form) }),
+    archive: (id: number) => post<AdminProductView>(`/api/admin/products/${id}/archive`),
+    restore: (id: number) => post<AdminProductView>(`/api/admin/products/${id}/restore`),
+    addVariant: (id: number, variant: VariantForm, stock: number) =>
+      post<AdminProductView>(`/api/admin/products/${id}/variants`, { variant, stock }),
+    setStock: (variantId: number, quantity: number) =>
+      request<AdminProductView>(`/api/admin/products/variants/${variantId}/stock`, {
+        method: 'PUT',
+        body: JSON.stringify({ quantity }),
+      }),
+  },
+
   confirmAction: (token: string) => post<ConfirmedAction>(`/api/assistant/pending-actions/${token}/confirm`),
   discardAction: (token: string) => post<void>(`/api/assistant/pending-actions/${token}/cancel`),
 }
