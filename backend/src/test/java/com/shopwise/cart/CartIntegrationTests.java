@@ -123,4 +123,27 @@ class CartIntegrationTests {
                 .extractingPath("$.reason")
                 .isEqualTo("OUT_OF_STOCK");
     }
+
+    @Test
+    void theAnonymousCartFollowsTheCustomerAfterSignUp() {
+        var added = mvc.post().uri("/api/cart/items").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"variantId\": %d, \"quantity\": 1}".formatted(variantWithStock(1)))
+                .exchange();
+        var cartCookie = added.getResponse().getCookie("shopwise_cart");
+
+        var registered = mvc.post().uri("/api/auth/register").with(csrf()).cookie(cartCookie)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"email": "cart-%s@example.com", "password": "correct horse", "name": "Pat"}
+                        """.formatted(java.util.UUID.randomUUID()))
+                .exchange();
+        var session = registered.getResponse().getCookie("SESSION");
+
+        assertThat(mvc.get().uri("/api/cart").cookie(session, cartCookie))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.itemCount")
+                .isEqualTo(1);
+    }
 }
