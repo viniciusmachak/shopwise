@@ -6,7 +6,7 @@ package com.shopwise.order;
 public class CheckoutException extends RuntimeException {
 
     public enum Reason {
-        EMPTY_CART, ITEM_UNAVAILABLE, NO_ADDRESS, CART_CHANGED, OUT_OF_STOCK, PAYMENT_DECLINED, NOT_FOUND, NOT_CANCELLABLE
+        EMPTY_CART, ITEM_UNAVAILABLE, NO_ADDRESS, CART_CHANGED, OUT_OF_STOCK, PAYMENT_DECLINED, NOT_FOUND, NOT_CANCELLABLE, INVALID_STATUS
     }
 
     private final Reason reason;
