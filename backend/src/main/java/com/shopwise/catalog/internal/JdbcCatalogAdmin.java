@@ -19,6 +19,7 @@ import com.shopwise.catalog.AdminProductView;
 import com.shopwise.catalog.CatalogAdmin;
 import com.shopwise.catalog.CatalogAdminException;
 import com.shopwise.catalog.CatalogAdminException.Reason;
+import com.shopwise.catalog.CatalogImportLine;
 import com.shopwise.catalog.ProductForm;
 import com.shopwise.catalog.ProductUpdated;
 import com.shopwise.catalog.VariantForm;
@@ -164,6 +165,67 @@ class JdbcCatalogAdmin implements CatalogAdmin {
                 """)
                 .param("id", variantId).param("q", quantity).update();
         return changed(productId);
+    }
+
+    @Override
+    public ImportOutcome importLine(CatalogImportLine line) {
+        var form = new ProductForm(line.productName(), line.brand(),
+                line.description() == null || line.description().isBlank() ? line.productName() : line.description(),
+                line.category(), line.price(), null, null);
+        var existing = jdbc.sql("select id from product where lower(name) = lower(:name) and lower(brand) = lower(:brand)")
+                .param("name", line.productName().trim())
+                .param("brand", line.brand().trim())
+                .query(Long.class)
+                .optional();
+        boolean createdProduct = existing.isEmpty();
+        long productId;
+        if (createdProduct) {
+            productId = jdbc.sql("""
+                    insert into product (slug, name, brand, description, category_id, price, attributes, image_url)
+                    values (:slug, :name, :brand, :description, :category, :price, cast(:attributes as jsonb), :image)
+                    returning id
+                    """)
+                    .param("slug", uniqueSlug(form.name()))
+                    .params(fields(form))
+                    .query(Long.class)
+                    .single();
+        }
+        else {
+            productId = existing.get();
+            var params = fields(form);
+            jdbc.sql("""
+                    update product set category_id = :category, price = :price, updated_at = now(),
+                        description = case when :keepDescription then description else :description end
+                    where id = :id
+                    """)
+                    .param("category", params.get("category"))
+                    .param("price", params.get("price"))
+                    .param("description", params.get("description"))
+                    .param("keepDescription", line.description() == null || line.description().isBlank())
+                    .param("id", productId)
+                    .update();
+        }
+
+        var variant = new VariantForm(line.sku(), line.size(), line.color(), null);
+        var variantId = jdbc.sql("select id, product_id from product_variant where sku = :sku")
+                .param("sku", line.sku().trim().toUpperCase(Locale.ROOT))
+                .query((rs, n) -> new long[] { rs.getLong("id"), rs.getLong("product_id") })
+                .optional();
+        ImportOutcome outcome;
+        if (variantId.isPresent()) {
+            if (variantId.get()[1] != productId) {
+                throw new CatalogAdminException(Reason.DUPLICATE_SKU,
+                        "SKU " + line.sku() + " already belongs to another product.");
+            }
+            updateVariant(variantId.get()[0], variant);
+            setStock(variantId.get()[0], line.stock());
+            outcome = ImportOutcome.UPDATED_VARIANT;
+        }
+        else {
+            addVariant(productId, variant, line.stock());
+            outcome = createdProduct ? ImportOutcome.CREATED_PRODUCT : ImportOutcome.ADDED_VARIANT;
+        }
+        return outcome;
     }
 
     private AdminProductView changed(long productId) {

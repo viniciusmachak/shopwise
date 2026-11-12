@@ -79,6 +79,12 @@
             <artifactId>spring-boot-starter-session-jdbc</artifactId>
         </dependency>
 
+        <!-- Batch jobs (catalog import), with the job repository in Postgres -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-batch-jdbc</artifactId>
+        </dependency>
+
         <!-- Transactional e-mail -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
