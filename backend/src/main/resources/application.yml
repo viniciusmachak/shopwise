@@ -25,6 +25,16 @@ spring:
   threads:
     virtual:
       enabled: true
+  batch:
+    job:
+      # Jobs are started from the backoffice, never on startup.
+      enabled: false
+    jdbc:
+      initialize-schema: always
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
   session:
     jdbc:
       initialize-schema: always

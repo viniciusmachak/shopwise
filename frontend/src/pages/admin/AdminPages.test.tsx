@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RequireAdmin } from '../../components/RequireAdmin'
+import { ImportResult } from './AdminImportPage'
 import { AdminOrderPage } from './AdminOrderPage'
 import { AdminProductsPage } from './AdminProductsPage'
 import { Route, Routes } from 'react-router'
@@ -83,5 +84,18 @@ describe('admin pages', () => {
     expect(screen.queryByRole('button', { name: 'Mark as shipped' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument()
     expect(screen.getByText('Tracking number: 1Z99')).toBeInTheDocument()
+  })
+  it('shows import results with skipped lines', () => {
+    render(
+      <ImportResult
+        report={{
+          id: 1, fileName: 'c.csv', status: 'COMPLETED', startedAt: '2026-11-11T12:00:00Z', read: 6, imported: 3,
+          skipped: 3, errors: [{ line: 5, message: 'Missing price.' }],
+        }}
+      />,
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent('6 rows read, 3 imported, 3 skipped.')
+    expect(screen.getByText(/Line 5:/)).toHaveTextContent('Missing price.')
   })
 })

@@ -28,4 +28,12 @@ public interface CatalogAdmin {
     AdminProductView updateVariant(long variantId, VariantForm form);
 
     AdminProductView setStock(long variantId, int quantity);
+
+    enum ImportOutcome { CREATED_PRODUCT, ADDED_VARIANT, UPDATED_VARIANT }
+
+    /**
+     * Upserts one import row: finds the product by name and brand (creating it if new, updating
+     * its price, category and description otherwise), then the variant by SKU, and sets its stock.
+     */
+    ImportOutcome importLine(CatalogImportLine line);
 }
