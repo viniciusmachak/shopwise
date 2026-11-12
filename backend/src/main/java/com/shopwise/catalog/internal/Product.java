@@ -45,6 +45,8 @@ class Product {
 
     private String imageUrl;
 
+    private boolean active = true;
+
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     @OrderBy("id")
     private List<ProductVariant> variants = new ArrayList<>();
@@ -86,6 +88,10 @@ class Product {
 
     Map<String, Object> getAttributes() {
         return attributes == null ? Map.of() : attributes;
+    }
+
+    boolean isActive() {
+        return active;
     }
 
     String getImageUrl() {

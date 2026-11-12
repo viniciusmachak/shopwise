@@ -1,6 +1,9 @@
 import { Route, Routes } from 'react-router'
 import { Layout } from './components/Layout'
+import { RequireAdmin } from './components/RequireAdmin'
 import { RequireSignIn } from './components/RequireSignIn'
+import { AdminProductPage } from './pages/admin/AdminProductPage'
+import { AdminProductsPage } from './pages/admin/AdminProductsPage'
 import { AccountPage } from './pages/AccountPage'
 import { CartPage } from './pages/CartPage'
 import { CatalogPage } from './pages/CatalogPage'
@@ -26,6 +29,9 @@ export function App() {
         <Route path="/checkout" element={<RequireSignIn><CheckoutPage /></RequireSignIn>} />
         <Route path="/orders" element={<RequireSignIn><OrdersPage /></RequireSignIn>} />
         <Route path="/orders/:id" element={<RequireSignIn><OrderPage /></RequireSignIn>} />
+        <Route path="/admin/products" element={<RequireAdmin><AdminProductsPage /></RequireAdmin>} />
+        <Route path="/admin/products/new" element={<RequireAdmin><AdminProductPage /></RequireAdmin>} />
+        <Route path="/admin/products/:id" element={<RequireAdmin><AdminProductPage /></RequireAdmin>} />
       </Routes>
     </Layout>
   )

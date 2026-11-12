@@ -39,15 +39,18 @@ class AccountService implements CustomerDirectory {
     private final ApplicationEventPublisher events;
     private final JdbcClient jdbc;
     private final WebProperties web;
+    private final AdminAccess adminAccess;
 
     AccountService(CustomerRepository customers, AddressRepository addresses, PasswordEncoder passwordEncoder,
-            ApplicationEventPublisher events, JdbcClient jdbc, WebProperties web) {
+            ApplicationEventPublisher events, JdbcClient jdbc, WebProperties web,
+            AdminAccess adminAccess) {
         this.customers = customers;
         this.addresses = addresses;
         this.passwordEncoder = passwordEncoder;
         this.events = events;
         this.jdbc = jdbc;
         this.web = web;
+        this.adminAccess = adminAccess;
     }
 
     Customer register(String email, String password, String name) {
@@ -57,6 +60,7 @@ class AccountService implements CustomerDirectory {
             throw new AccountException(HttpStatus.CONFLICT, "An account with this e-mail already exists.");
         }
         var customer = new Customer(normalized, name.trim());
+        adminAccess.applyTo(customer);
         customer.setPasswordHash(passwordEncoder.encode(password));
         customers.save(customer);
         events.publishEvent(new CustomerRegistered(customer.getId()));
@@ -81,6 +85,7 @@ class AccountService implements CustomerDirectory {
             return byEmail.get();
         }
         var customer = new Customer(email, name == null || name.isBlank() ? email : name);
+        adminAccess.applyTo(customer);
         customer.linkGoogle(subject);
         customers.save(customer);
         events.publishEvent(new CustomerRegistered(customer.getId()));

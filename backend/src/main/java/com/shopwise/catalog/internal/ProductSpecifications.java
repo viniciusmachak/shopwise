@@ -16,6 +16,7 @@ final class ProductSpecifications {
     static Specification<Product> matching(ProductFilter filter) {
         return (root, query, cb) -> {
             var predicates = new ArrayList<Predicate>();
+            predicates.add(cb.isTrue(root.get("active")));
             if (filter.category() != null && !filter.category().isBlank()) {
                 predicates.add(cb.equal(root.get("category").get("slug"), filter.category()));
             }

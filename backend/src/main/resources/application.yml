@@ -75,6 +75,9 @@ management:
         include: health,info,prometheus
 
 shopwise:
+  admin:
+    # Comma-separated e-mails that get the admin role (backoffice).
+    emails: ${SHOPWISE_ADMIN_EMAILS:}
   mail:
     from: ${SHOPWISE_MAIL_FROM:Shopwise <no-reply@shopwise.local>}
   web:

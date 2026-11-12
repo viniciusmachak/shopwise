@@ -73,6 +73,10 @@ class Customer {
         this.passwordHash = passwordHash;
     }
 
+    void makeAdmin() {
+        this.role = Role.ADMIN;
+    }
+
     void linkGoogle(String subject) {
         this.googleSubject = subject;
     }
