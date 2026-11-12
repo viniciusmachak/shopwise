@@ -69,6 +69,12 @@ class Order {
 
     Instant cancelledAt;
 
+    Instant shippedAt;
+
+    Instant deliveredAt;
+
+    String trackingNumber;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id")
     List<OrderItem> items = new ArrayList<>();
@@ -89,6 +95,19 @@ class Order {
     void markPaid() {
         status = OrderStatus.PAID;
         updatedAt = Instant.now();
+    }
+
+    void ship(String trackingNumber) {
+        status = OrderStatus.SHIPPED;
+        this.trackingNumber = trackingNumber;
+        shippedAt = Instant.now();
+        updatedAt = shippedAt;
+    }
+
+    void deliver() {
+        status = OrderStatus.DELIVERED;
+        deliveredAt = Instant.now();
+        updatedAt = deliveredAt;
     }
 
     void cancel() {

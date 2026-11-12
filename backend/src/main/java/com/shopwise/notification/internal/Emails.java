@@ -68,6 +68,33 @@ final class Emails {
                 """.formatted(to.name(), order.id(), money(order.total())));
     }
 
+    static Email orderShipped(CustomerContact to, OrderView order, String orderUrl) {
+        var tracking = order.trackingNumber() == null ? "" : "\nTracking number: " + order.trackingNumber() + "\n";
+        return new Email("Your Shopwise order #" + order.id() + " is on its way", """
+                Hi %s,
+
+                Good news: your order #%d has shipped.
+                %s
+                %s
+
+                Details: %s
+
+                Shopwise
+                """.formatted(to.name(), order.id(), tracking, lines(order), orderUrl));
+    }
+
+    static Email orderDelivered(CustomerContact to, OrderView order, String orderUrl) {
+        return new Email("Your Shopwise order #" + order.id() + " was delivered", """
+                Hi %s,
+
+                Your order #%d was delivered. We hope you enjoy it!
+
+                Details: %s
+
+                Shopwise
+                """.formatted(to.name(), order.id(), orderUrl));
+    }
+
     private static String lines(OrderView order) {
         return order.items().stream()
                 .map(l -> "- %d x %s%s  %s".formatted(l.quantity(), l.productName(),

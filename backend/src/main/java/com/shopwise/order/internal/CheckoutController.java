@@ -73,7 +73,7 @@ class CheckoutController {
     ProblemDetail handle(CheckoutException e) {
         var status = switch (e.reason()) {
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case CART_CHANGED, OUT_OF_STOCK, ITEM_UNAVAILABLE, NOT_CANCELLABLE -> HttpStatus.CONFLICT;
+            case CART_CHANGED, OUT_OF_STOCK, ITEM_UNAVAILABLE, NOT_CANCELLABLE, INVALID_STATUS -> HttpStatus.CONFLICT;
             case PAYMENT_DECLINED -> HttpStatus.PAYMENT_REQUIRED;
             case EMPTY_CART, NO_ADDRESS -> HttpStatus.UNPROCESSABLE_CONTENT;
         };

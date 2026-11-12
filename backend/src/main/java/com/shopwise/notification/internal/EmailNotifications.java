@@ -14,6 +14,8 @@ import com.shopwise.customer.PasswordResetRequested;
 import com.shopwise.order.OrderCancelled;
 import com.shopwise.order.OrderPlaced;
 import com.shopwise.order.OrderService;
+import com.shopwise.order.OrderStatus;
+import com.shopwise.order.OrderStatusChanged;
 
 /**
  * Sends e-mails after the triggering transaction commits. If sending fails, the event
@@ -60,6 +62,22 @@ class EmailNotifications {
         var order = orders.find(event.customerId(), event.orderId());
         if (to.isPresent() && order.isPresent()) {
             send(to.get(), Emails.orderCancelled(to.get(), order.get()));
+        }
+    }
+
+    @ApplicationModuleListener
+    void on(OrderStatusChanged event) {
+        var to = customers.contact(event.customerId());
+        var order = orders.find(event.customerId(), event.orderId());
+        if (to.isEmpty() || order.isEmpty()) {
+            return;
+        }
+        var url = frontendUrl + "/orders/" + event.orderId();
+        if (event.status() == OrderStatus.SHIPPED) {
+            send(to.get(), Emails.orderShipped(to.get(), order.get(), url));
+        }
+        else if (event.status() == OrderStatus.DELIVERED) {
+            send(to.get(), Emails.orderDelivered(to.get(), order.get(), url));
         }
     }
 

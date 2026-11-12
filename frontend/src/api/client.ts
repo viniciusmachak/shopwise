@@ -25,6 +25,9 @@ export type AdminProductView = Schemas['AdminProductView']
 export type AdminVariant = Schemas['Variant']
 export type ProductForm = Schemas['ProductForm']
 export type VariantForm = Schemas['VariantForm']
+export type AdminOrderRow = Schemas['AdminOrderRow']
+export type AdminOrderView = Schemas['AdminOrderView']
+export type OrderStatus = OrderView['status']
 
 export class ApiError extends Error {
   readonly status: number
@@ -141,6 +144,13 @@ export const api = {
     restore: (id: number) => post<AdminProductView>(`/api/admin/products/${id}/restore`),
     addVariant: (id: number, variant: VariantForm, stock: number) =>
       post<AdminProductView>(`/api/admin/products/${id}/variants`, { variant, stock }),
+    orders: (status: OrderStatus | '', q: string) =>
+      request<AdminOrderRow[]>(`/api/admin/orders${query({ status: status || undefined, q })}`),
+    order: (id: number) => request<AdminOrderView>(`/api/admin/orders/${id}`),
+    shipOrder: (id: number, trackingNumber: string) =>
+      post<AdminOrderView>(`/api/admin/orders/${id}/ship`, { trackingNumber: trackingNumber || null }),
+    deliverOrder: (id: number) => post<AdminOrderView>(`/api/admin/orders/${id}/deliver`),
+    cancelOrder: (id: number) => post<AdminOrderView>(`/api/admin/orders/${id}/cancel`),
     setStock: (variantId: number, quantity: number) =>
       request<AdminProductView>(`/api/admin/products/variants/${variantId}/stock`, {
         method: 'PUT',

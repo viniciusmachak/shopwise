@@ -26,7 +26,7 @@ const quote: CheckoutQuote = {
 }
 
 const order: OrderView = {
-  id: 1042, status: 'PAID', placedAt: '2026-11-10T12:00:00Z', cancelledAt: null,
+  id: 1042, status: 'PAID', placedAt: '2026-11-10T12:00:00Z', cancelledAt: null, shippedAt: null, deliveredAt: null, trackingNumber: null,
   items: [{ productId: 1, productName: 'Trail Runner X', size: '10', color: null, quantity: 1, unitPrice: usd(89.9), lineTotal: usd(89.9) }],
   subtotal: usd(89.9), couponCode: null, discount: usd(0), shippingOption: 'STANDARD', shipping: usd(5), total: usd(94.9),
   shippingAddress: { recipient: 'Pat Doe', line1: '123 Main St', line2: null, city: 'Springfield', state: 'IL', postalCode: '62701', country: 'US' },

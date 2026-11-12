@@ -5,10 +5,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +26,12 @@ import com.shopwise.customer.CustomerDirectory;
 import com.shopwise.order.CheckoutException;
 import com.shopwise.order.CheckoutException.Reason;
 import com.shopwise.order.CheckoutQuote;
+import com.shopwise.order.AdminOrderRow;
+import com.shopwise.order.AdminOrderView;
 import com.shopwise.order.CheckoutService;
+import com.shopwise.order.OrderAdmin;
+import com.shopwise.order.OrderStatus;
+import com.shopwise.order.OrderStatusChanged;
 import com.shopwise.order.OrderCancelled;
 import com.shopwise.order.OrderPlaced;
 import com.shopwise.order.OrderService;
@@ -36,7 +43,7 @@ import com.shopwise.payment.PaymentService;
 
 @Service
 @Transactional
-class DefaultOrderService implements CheckoutService, OrderService {
+class DefaultOrderService implements CheckoutService, OrderService, OrderAdmin {
 
     private final OrderRepository orders;
     private final CartService carts;
@@ -145,6 +152,10 @@ class DefaultOrderService implements CheckoutService, OrderService {
     public OrderView cancel(long customerId, long orderId) {
         var order = orders.findByIdAndCustomerId(orderId, customerId)
                 .orElseThrow(() -> new CheckoutException(Reason.NOT_FOUND, "Order not found."));
+        return toView(cancel(order));
+    }
+
+    private Order cancel(Order order) {
         if (!order.isCancellable()) {
             throw new CheckoutException(Reason.NOT_CANCELLABLE,
                     "This order can't be cancelled anymore because it is " + order.status.name().toLowerCase() + ".");
@@ -152,8 +163,77 @@ class DefaultOrderService implements CheckoutService, OrderService {
         order.cancel();
         stock.release(order.items.stream().map(i -> new StockChange(i.variantId, i.quantity)).toList());
         payments.refund(order.id);
-        events.publishEvent(new OrderCancelled(order.id, customerId));
-        return toView(order);
+        events.publishEvent(new OrderCancelled(order.id, order.customerId));
+        return order;
+    }
+
+    // Backoffice
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminOrderRow> list(@Nullable OrderStatus status, @Nullable String query) {
+        var q = query == null ? "" : query.trim().replaceFirst("^#", "");
+        return orders.findForBackoffice(status, PageRequest.of(0, 500)).stream()
+                .map(o -> {
+                    var contact = customers.contact(o.customerId);
+                    return new AdminOrderRow(o.id, o.status, o.placedAt,
+                            contact.map(c -> c.name()).orElse("?"), contact.map(c -> c.email()).orElse("?"),
+                            o.items.stream().mapToInt(i -> i.quantity).sum(), new Money(o.total, o.currency));
+                })
+                .filter(r -> q.isEmpty() || String.valueOf(r.id()).equals(q)
+                        || r.customerEmail().toLowerCase(Locale.ROOT).contains(q.toLowerCase(Locale.ROOT)))
+                .limit(200)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<AdminOrderView> get(long orderId) {
+        return orders.findById(orderId).map(this::toAdminView);
+    }
+
+    @Override
+    public AdminOrderView markShipped(long orderId, @Nullable String trackingNumber) {
+        var order = adminOrder(orderId);
+        if (order.status != OrderStatus.PAID) {
+            throw invalidTransition(order, "shipped");
+        }
+        order.ship(trackingNumber == null || trackingNumber.isBlank() ? null : trackingNumber.trim());
+        events.publishEvent(new OrderStatusChanged(order.id, order.customerId, order.status));
+        return toAdminView(order);
+    }
+
+    @Override
+    public AdminOrderView markDelivered(long orderId) {
+        var order = adminOrder(orderId);
+        if (order.status != OrderStatus.SHIPPED) {
+            throw invalidTransition(order, "delivered");
+        }
+        order.deliver();
+        events.publishEvent(new OrderStatusChanged(order.id, order.customerId, order.status));
+        return toAdminView(order);
+    }
+
+    @Override
+    public AdminOrderView cancel(long orderId) {
+        return toAdminView(cancel(adminOrder(orderId)));
+    }
+
+    private Order adminOrder(long orderId) {
+        return orders.findById(orderId)
+                .filter(o -> o.status != OrderStatus.PENDING_PAYMENT)
+                .orElseThrow(() -> new CheckoutException(Reason.NOT_FOUND, "Order not found."));
+    }
+
+    private static CheckoutException invalidTransition(Order order, String target) {
+        return new CheckoutException(Reason.INVALID_STATUS,
+                "Order #" + order.id + " is " + order.status.name().toLowerCase() + " and can't be marked " + target + ".");
+    }
+
+    private AdminOrderView toAdminView(Order order) {
+        var contact = customers.contact(order.customerId);
+        return new AdminOrderView(toView(order), order.customerId,
+                contact.map(c -> c.name()).orElse("?"), contact.map(c -> c.email()).orElse("?"));
     }
 
     private static void fill(Order order, CartView cart, CheckoutQuote quote, AddressView address) {
@@ -192,7 +272,7 @@ class DefaultOrderService implements CheckoutService, OrderService {
                 .toList();
         var address = new OrderView.ShippingAddress(o.shipRecipient, o.shipLine1, o.shipLine2, o.shipCity, o.shipState,
                 o.shipPostalCode, o.shipCountry);
-        return new OrderView(o.id, o.status, o.placedAt, o.cancelledAt, items, new Money(o.subtotal, o.currency),
+        return new OrderView(o.id, o.status, o.placedAt, o.cancelledAt, o.shippedAt, o.deliveredAt, o.trackingNumber, items, new Money(o.subtotal, o.currency),
                 o.couponCode, new Money(o.discount, o.currency), o.shippingOption, new Money(o.shipping, o.currency),
                 new Money(o.total, o.currency), address, o.isCancellable());
     }
