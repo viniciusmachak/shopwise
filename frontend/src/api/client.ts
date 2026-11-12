@@ -28,6 +28,7 @@ export type VariantForm = Schemas['VariantForm']
 export type AdminOrderRow = Schemas['AdminOrderRow']
 export type AdminOrderView = Schemas['AdminOrderView']
 export type OrderStatus = OrderView['status']
+export type ImportReport = Schemas['ImportReport']
 
 export class ApiError extends Error {
   readonly status: number
@@ -151,6 +152,23 @@ export const api = {
       post<AdminOrderView>(`/api/admin/orders/${id}/ship`, { trackingNumber: trackingNumber || null }),
     deliverOrder: (id: number) => post<AdminOrderView>(`/api/admin/orders/${id}/deliver`),
     cancelOrder: (id: number) => post<AdminOrderView>(`/api/admin/orders/${id}/cancel`),
+    imports: () => request<ImportReport[]>('/api/admin/imports'),
+    importCatalog: async (file: File): Promise<ImportReport> => {
+      const body = new FormData()
+      body.append('file', file)
+      // No Content-Type: the browser sets the multipart boundary.
+      const response = await fetch('/api/admin/imports', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json', ...csrfHeaders('POST') },
+        body,
+      })
+      if (!response.ok) {
+        const problem = (await response.json().catch(() => ({}))) as { detail?: string }
+        throw new ApiError(response.status, problem.detail ?? response.statusText)
+      }
+      return (await response.json()) as ImportReport
+    },
     setStock: (variantId: number, quantity: number) =>
       request<AdminProductView>(`/api/admin/products/variants/${variantId}/stock`, {
         method: 'PUT',

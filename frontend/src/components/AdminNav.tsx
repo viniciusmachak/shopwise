@@ -6,6 +6,7 @@ export function AdminNav() {
     <nav aria-label={t('nav.admin')} className="admin-nav">
       <NavLink to="/admin/products">{t('admin.products')}</NavLink>
       <NavLink to="/admin/orders">{t('admin.orders')}</NavLink>
+      <NavLink to="/admin/import">{t('import.title')}</NavLink>
     </nav>
   )
 }
