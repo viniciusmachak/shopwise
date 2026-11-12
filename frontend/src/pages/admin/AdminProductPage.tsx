@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { api, type AdminProductView, type AdminVariant, type ProductForm } from '../../api/client'
+import { AdminNav } from '../../components/AdminNav'
 import { t } from '../../i18n'
 
 export function AdminProductPage() {
@@ -18,6 +19,7 @@ export function AdminProductPage() {
 
   return (
     <section className="admin-page">
+      <AdminNav />
       <h1>{isNew ? t('admin.newProduct') : product.data!.name}</h1>
       <ProductEditor key={product.data?.id ?? 'new'} product={product.data} />
       {product.data && <Variants product={product.data} />}

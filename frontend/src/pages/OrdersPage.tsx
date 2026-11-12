@@ -51,6 +51,9 @@ export function OrderPage() {
       <p>
         {statusLabel(o.status)} · {t('orders.placedOn', { date: formatDate(o.placedAt) })}
       </p>
+      {o.trackingNumber && <p>{t('orders.tracking', { number: o.trackingNumber })}</p>}
+      {o.shippedAt && <p className="muted">{t('orders.shippedOn', { date: formatDate(o.shippedAt) })}</p>}
+      {o.deliveredAt && <p className="muted">{t('orders.deliveredOn', { date: formatDate(o.deliveredAt) })}</p>}
       <ul className="cart-lines">
         {o.items.map((line, i) => (
           <li key={i}>

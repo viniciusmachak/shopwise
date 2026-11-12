@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { api } from '../../api/client'
+import { AdminNav } from '../../components/AdminNav'
 import { formatMoney, t } from '../../i18n'
 
 export function AdminProductsPage() {
@@ -15,6 +16,7 @@ export function AdminProductsPage() {
 
   return (
     <section className="admin-page">
+      <AdminNav />
       <h1>{t('admin.products')}</h1>
       <div className="filters">
         <label>

@@ -3,7 +3,9 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RequireAdmin } from '../../components/RequireAdmin'
+import { AdminOrderPage } from './AdminOrderPage'
 import { AdminProductsPage } from './AdminProductsPage'
+import { Route, Routes } from 'react-router'
 
 function respondWith(routes: Record<string, unknown>) {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
@@ -52,5 +54,34 @@ describe('admin pages', () => {
     expect(await screen.findByRole('link', { name: 'Trail Runner X' })).toHaveAttribute('href', '/admin/products/1')
     expect(screen.getByText('31 in 5 variants')).toBeInTheDocument()
     expect(screen.getByText('Archived')).toBeInTheDocument()
+  })
+  it('only offers the next step for an order', async () => {
+    const order = (status: string) => ({
+      order: {
+        id: 7, status, placedAt: '2026-11-10T12:00:00Z', cancelledAt: null, shippedAt: null, deliveredAt: null,
+        trackingNumber: status === 'SHIPPED' ? '1Z99' : null, items: [], subtotal: { amount: 10, currency: 'USD' },
+        couponCode: null, discount: { amount: 0, currency: 'USD' }, shippingOption: 'STANDARD',
+        shipping: { amount: 5, currency: 'USD' }, total: { amount: 15, currency: 'USD' },
+        shippingAddress: { recipient: 'Pat', line1: '1 Main St', line2: null, city: 'Springfield', state: 'IL', postalCode: '62701', country: 'US' },
+        cancellable: status === 'PAID',
+      },
+      customerId: 1, customerName: 'Pat', customerEmail: 'pat@example.test',
+    })
+    respondWith({ '/api/admin/orders/7': order('SHIPPED') })
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/admin/orders/7']}>
+          <Routes>
+            <Route path="/admin/orders/:id" element={<AdminOrderPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByRole('button', { name: 'Mark as delivered' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mark as shipped' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument()
+    expect(screen.getByText('Tracking number: 1Z99')).toBeInTheDocument()
   })
 })
