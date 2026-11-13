@@ -1,0 +1,17 @@
+# Production overrides. Everything secret comes from environment variables (see deploy/.env.prod.example).
+spring:
+  flyway:
+    # No demo data in production.
+    locations: classpath:db/migration
+
+server:
+  # Behind Caddy: trust X-Forwarded-* so redirects, OAuth callbacks and secure cookies use https.
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        secure: true
+
+logging:
+  level:
+    root: INFO
