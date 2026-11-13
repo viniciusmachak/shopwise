@@ -160,4 +160,18 @@ class RoutingChatModelTests {
         assertThat(received.get().getModel()).isEqualTo("target-model");
         assertThat(((ToolCallingChatOptions) received.get()).getToolCallbacks()).hasSize(1);
     }
+
+    @Test
+    void recordsEachAttemptPerProvider() {
+        var recorded = new java.util.ArrayList<String>();
+        UsageRecorder recorder = (provider, ok, prompt, completion) -> recorded.add(provider + ":" + ok);
+        var router = new RoutingChatModel(new ChatModeSettings(ChatMode.CLOUD), true,
+                List.of(new NamedChatModel("gemini", new FakeModel("gemini", true))),
+                new NamedChatModel("ollama", new FakeModel("ollama", false)), recorder);
+
+        router.call(new Prompt("hi"));
+        router.stream(new Prompt("hi")).collectList().block();
+
+        assertThat(recorded).containsExactly("gemini:false", "ollama:true", "gemini:false", "ollama:true");
+    }
 }

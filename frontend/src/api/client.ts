@@ -29,6 +29,11 @@ export type AdminOrderRow = Schemas['AdminOrderRow']
 export type AdminOrderView = Schemas['AdminOrderView']
 export type OrderStatus = OrderView['status']
 export type ImportReport = Schemas['ImportReport']
+export type AssistantStatus = Schemas['AssistantStatus']
+export type AssistantStats = Schemas['AssistantStats']
+export type ConversationOverview = Schemas['ConversationOverview']
+export type TranscriptLine = Schemas['TranscriptLine']
+export type ChatMode = AssistantStatus['mode']
 
 export class ApiError extends Error {
   readonly status: number
@@ -152,6 +157,12 @@ export const api = {
       post<AdminOrderView>(`/api/admin/orders/${id}/ship`, { trackingNumber: trackingNumber || null }),
     deliverOrder: (id: number) => post<AdminOrderView>(`/api/admin/orders/${id}/deliver`),
     cancelOrder: (id: number) => post<AdminOrderView>(`/api/admin/orders/${id}/cancel`),
+    assistantStatus: () => request<AssistantStatus>('/api/admin/assistant/mode'),
+    changeChatMode: (mode: ChatMode) =>
+      request<AssistantStatus>('/api/admin/assistant/mode', { method: 'PUT', body: JSON.stringify({ mode }) }),
+    assistantStats: (days: number) => request<AssistantStats>(`/api/admin/assistant/stats${query({ days })}`),
+    assistantConversations: () => request<ConversationOverview[]>('/api/admin/assistant/conversations'),
+    assistantTranscript: (id: string) => request<TranscriptLine[]>(`/api/admin/assistant/conversations/${id}`),
     imports: () => request<ImportReport[]>('/api/admin/imports'),
     importCatalog: async (file: File): Promise<ImportReport> => {
       const body = new FormData()
