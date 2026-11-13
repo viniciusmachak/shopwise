@@ -212,3 +212,17 @@ body {
   gap: 1rem;
   margin-bottom: 1rem;
 }
+
+.conversation-list {
+  list-style: none;
+  padding: 0;
+}
+
+.conversation-list button {
+  text-align: left;
+  width: 100%;
+}
+
+.transcript li.user {
+  font-weight: 500;
+}

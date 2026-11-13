@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router'
 import { Layout } from './components/Layout'
 import { RequireAdmin } from './components/RequireAdmin'
 import { RequireSignIn } from './components/RequireSignIn'
+import { AdminAssistantPage } from './pages/admin/AdminAssistantPage'
 import { AdminImportPage } from './pages/admin/AdminImportPage'
 import { AdminOrderPage } from './pages/admin/AdminOrderPage'
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
@@ -38,6 +39,7 @@ export function App() {
         <Route path="/admin/orders" element={<RequireAdmin><AdminOrdersPage /></RequireAdmin>} />
         <Route path="/admin/orders/:id" element={<RequireAdmin><AdminOrderPage /></RequireAdmin>} />
         <Route path="/admin/import" element={<RequireAdmin><AdminImportPage /></RequireAdmin>} />
+        <Route path="/admin/assistant" element={<RequireAdmin><AdminAssistantPage /></RequireAdmin>} />
       </Routes>
     </Layout>
   )

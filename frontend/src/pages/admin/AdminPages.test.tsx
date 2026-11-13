@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RequireAdmin } from '../../components/RequireAdmin'
+import userEvent from '@testing-library/user-event'
+import { AdminAssistantPage } from './AdminAssistantPage'
 import { ImportResult } from './AdminImportPage'
 import { AdminOrderPage } from './AdminOrderPage'
 import { AdminProductsPage } from './AdminProductsPage'
@@ -97,5 +99,30 @@ describe('admin pages', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('6 rows read, 3 imported, 3 skipped.')
     expect(screen.getByText(/Line 5:/)).toHaveTextContent('Missing price.')
+  })
+  it('switches the chat mode from the dashboard', async () => {
+    const status = (mode: string) => ({
+      mode, configuredMode: 'LOCAL', changedAt: null, localModel: 'qwen2.5:7b', fallbackToLocal: true,
+      cloudProviders: [{ name: 'gemini', model: 'gemini-2.5-flash', configured: true }],
+    })
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.startsWith('/api/admin/assistant/mode')) {
+        return new Response(JSON.stringify(status(init?.method === 'PUT' ? 'CLOUD' : 'LOCAL')), { status: 200 })
+      }
+      if (url.startsWith('/api/admin/assistant/stats')) {
+        return new Response(JSON.stringify({ days: 7, conversations: 4, userMessages: 9, checkoutsPrepared: 2,
+          ordersPlaced: 1, conversionRate: 0.25, tools: [], usage: [] }), { status: 200 })
+      }
+      return new Response('[]', { status: 200 })
+    })
+
+    renderWithProviders(<AdminAssistantPage />)
+
+    expect(await screen.findByText('25%')).toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('radio', { name: 'Cloud (free-tier APIs)' }))
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/assistant/mode', expect.objectContaining({ method: 'PUT', body: '{"mode":"CLOUD"}' }))
+    expect(await screen.findByRole('radio', { name: 'Cloud (free-tier APIs)' })).toBeChecked()
   })
 })

@@ -7,6 +7,7 @@ export function AdminNav() {
       <NavLink to="/admin/products">{t('admin.products')}</NavLink>
       <NavLink to="/admin/orders">{t('admin.orders')}</NavLink>
       <NavLink to="/admin/import">{t('import.title')}</NavLink>
+      <NavLink to="/admin/assistant">{t('assistantAdmin.title')}</NavLink>
     </nav>
   )
 }
