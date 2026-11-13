@@ -129,7 +129,7 @@ Checkout works the same from the page and from the chat. A quote fingerprints th
 
 ## Data
 
-The main tables: `customer`, `address`, `password_reset_token`, `category`, `product`, `product_variant`, `inventory`, `search_document` (the search module's read model, with the embeddings), `cart`, `cart_item`, `coupon`, `orders`, `order_item`, `payment`, `assistant_conversation`, `pending_action` and `audit_log`. An `app_setting` table for runtime settings like the chat mode comes with the backoffice. Spring AI, Spring Session and Modulith add their own tables to the same database, and Spring Batch will too.
+The main tables: `customer`, `address`, `password_reset_token`, `category`, `product`, `product_variant`, `inventory`, `search_document` (the search module's read model, with the embeddings), `cart`, `cart_item`, `coupon`, `orders`, `order_item`, `payment`, `assistant_conversation`, `pending_action`, `audit_log`, `assistant_llm_usage` (model calls and tokens per day and provider), `catalog_import_error`, and `app_setting` for runtime settings like the chat mode. Spring AI, Spring Session, Spring Batch and Modulith add their own tables to the same database.
 
 Flyway manages migrations. Demo data lives in `db/seed`, numbered from V1000, and is only loaded outside production; out-of-order migrations are allowed so new schema changes still apply to databases that already have the seed.
 

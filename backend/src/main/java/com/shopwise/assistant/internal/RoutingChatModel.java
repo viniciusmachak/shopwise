@@ -28,13 +28,28 @@ class RoutingChatModel implements ChatModel {
     private final boolean fallbackToLocal;
     private final List<NamedChatModel> cloud;
     private final NamedChatModel local;
+    private final UsageRecorder usage;
 
     RoutingChatModel(ChatModeSettings settings, boolean fallbackToLocal, List<NamedChatModel> cloud,
             NamedChatModel local) {
+        this(settings, fallbackToLocal, cloud, local, UsageRecorder.NONE);
+    }
+
+    RoutingChatModel(ChatModeSettings settings, boolean fallbackToLocal, List<NamedChatModel> cloud,
+            NamedChatModel local, UsageRecorder usage) {
         this.settings = settings;
         this.fallbackToLocal = fallbackToLocal;
         this.cloud = List.copyOf(cloud);
         this.local = local;
+        this.usage = usage;
+    }
+
+    List<String> cloudProviders() {
+        return cloud.stream().map(NamedChatModel::name).toList();
+    }
+
+    String localName() {
+        return local.name();
     }
 
     ChatModeSettings settings() {
@@ -57,10 +72,14 @@ class RoutingChatModel implements ChatModel {
         RuntimeException last = null;
         for (var candidate : candidates()) {
             try {
-                return candidate.model().call(retarget(prompt, candidate.model()));
+                var response = candidate.model().call(retarget(prompt, candidate.model()));
+                var tokens = tokens(response);
+                usage.record(candidate.name(), true, tokens[0], tokens[1]);
+                return response;
             }
             catch (RuntimeException e) {
                 log.warn("Chat model {} failed: {}", candidate.name(), e.getMessage());
+                usage.record(candidate.name(), false, 0, 0);
                 last = e;
             }
         }
@@ -78,15 +97,33 @@ class RoutingChatModel implements ChatModel {
         }
         var candidate = models.get(index);
         var emitted = new AtomicBoolean();
+        var tokens = new long[2];
         return Flux.defer(() -> candidate.model().stream(retarget(prompt, candidate.model())))
-                .doOnNext(r -> emitted.set(true))
+                .doOnNext(r -> {
+                    emitted.set(true);
+                    var t = tokens(r);
+                    tokens[0] = Math.max(tokens[0], t[0]);
+                    tokens[1] = Math.max(tokens[1], t[1]);
+                })
+                .doOnComplete(() -> usage.record(candidate.name(), true, tokens[0], tokens[1]))
                 .onErrorResume(e -> {
+                    usage.record(candidate.name(), false, tokens[0], tokens[1]);
                     if (emitted.get()) {
                         return Flux.error(e);
                     }
                     log.warn("Chat model {} failed: {}", candidate.name(), e.getMessage());
                     return streamFrom(models, index + 1, prompt, e);
                 });
+    }
+
+    /** Prompt and completion tokens the provider reported, or zeros. */
+    private static long[] tokens(ChatResponse response) {
+        if (response == null || response.getMetadata() == null || response.getMetadata().getUsage() == null) {
+            return new long[2];
+        }
+        var u = response.getMetadata().getUsage();
+        return new long[] { u.getPromptTokens() == null ? 0 : u.getPromptTokens(),
+                u.getCompletionTokens() == null ? 0 : u.getCompletionTokens() };
     }
 
     @Override

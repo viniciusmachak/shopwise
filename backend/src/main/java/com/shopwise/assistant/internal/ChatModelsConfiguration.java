@@ -19,7 +19,13 @@ import org.springframework.context.annotation.Configuration;
 class ChatModelsConfiguration {
 
     @Bean
-    RoutingChatModel routingChatModel(AiProperties properties, ToolCallingManager toolCallingManager) {
+    ChatModeSettings chatModeSettings(AiProperties properties) {
+        return new ChatModeSettings(properties.chatMode());
+    }
+
+    @Bean
+    RoutingChatModel routingChatModel(AiProperties properties, ToolCallingManager toolCallingManager,
+            ChatModeSettings settings, UsageRecorder usage) {
         var local = new NamedChatModel("ollama", OllamaChatModel.builder()
                 .ollamaApi(OllamaApi.builder().baseUrl(properties.local().baseUrl()).build())
                 .options(OllamaChatOptions.builder().model(properties.local().model()).temperature(0.2).build())
@@ -40,7 +46,6 @@ class ChatModelsConfiguration {
                         .build()));
             }
         }
-        return new RoutingChatModel(new ChatModeSettings(properties.chatMode()), properties.fallbackToLocal(), cloud,
-                local);
+        return new RoutingChatModel(settings, properties.fallbackToLocal(), cloud, local, usage);
     }
 }
