@@ -26,7 +26,10 @@ class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/me/**", "/api/checkout/**", "/api/orders/**").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/actuator/health/**", "/actuator/info").permitAll()
+                        // Prometheus scrapes this inside the Docker network; in production the backend
+                        // port isn't published and Caddy doesn't route /actuator.
+                        .requestMatchers(HttpMethod.GET, "/actuator/health/**", "/actuator/info",
+                                "/actuator/prometheus").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .anyRequest().permitAll())
                 .csrf(csrf -> csrf.spa())

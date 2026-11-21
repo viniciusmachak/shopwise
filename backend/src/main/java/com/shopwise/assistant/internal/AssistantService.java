@@ -1,10 +1,12 @@
 package com.shopwise.assistant.internal;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.jspecify.annotations.Nullable;
@@ -27,6 +29,8 @@ import com.shopwise.order.CheckoutService;
 import com.shopwise.order.OrderService;
 import com.shopwise.search.SearchService;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import reactor.core.publisher.Flux;
 
 @Service
@@ -43,12 +47,13 @@ class AssistantService {
     private final OrderService orders;
     private final PendingActions pending;
     private final ChatMemoryRepository memoryRepository;
+    private final Timer firstTokenTimer;
     private final String systemPrompt;
     private final String voicePrompt;
 
     AssistantService(RoutingChatModel chatModel, ChatMemoryRepository memoryRepository, SearchService search,
             CatalogService catalog, CartService carts, AuditLog audit, CheckoutService checkout, OrderService orders,
-            PendingActions pending,
+            PendingActions pending, MeterRegistry meters,
             @Value("classpath:prompts/system.md") Resource systemPrompt,
             @Value("classpath:prompts/voice.md") Resource voicePrompt) throws IOException {
         ChatMemory memory = MessageWindowChatMemory.builder()
@@ -66,6 +71,9 @@ class AssistantService {
         this.orders = orders;
         this.pending = pending;
         this.memoryRepository = memoryRepository;
+        this.firstTokenTimer = Timer.builder("shopwise.assistant.first.token")
+                .description("Time from a customer message to the first token of the reply")
+                .register(meters);
         this.systemPrompt = systemPrompt.getContentAsString(StandardCharsets.UTF_8);
         this.voicePrompt = voicePrompt.getContentAsString(StandardCharsets.UTF_8);
     }
@@ -80,6 +88,8 @@ class AssistantService {
         var orderTools = new OrderTools(customerId, cartKey, conversationId, ui, checkout, orders, pending, audit);
         var system = voice ? systemPrompt + "\n\n" + voicePrompt : systemPrompt;
 
+        var started = System.nanoTime();
+        var firstToken = new AtomicBoolean();
         Flux<ServerSentEvent<Object>> tokens = chatClient.prompt()
                 .system(system)
                 .user(text)
@@ -87,6 +97,11 @@ class AssistantService {
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId.toString()))
                 .stream()
                 .content()
+                .doOnNext(chunk -> {
+                    if (firstToken.compareAndSet(false, true)) {
+                        firstTokenTimer.record(Duration.ofNanos(System.nanoTime() - started));
+                    }
+                })
                 .map(chunk -> event("token", Map.of("text", chunk)))
                 .onErrorResume(e -> {
                     log.warn("Assistant reply failed for conversation {}", conversationId, e);
