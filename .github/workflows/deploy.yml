@@ -1,0 +1,70 @@
+name: Deploy
+
+# Manual: copies deploy/ to the VM, switches to the chosen image tag, pulls and restarts,
+# then checks the site answers. Needs these secrets in the "production" environment:
+#   DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY (private key), DEPLOY_KNOWN_HOSTS (ssh-keyscan output)
+# and optionally the variables DEPLOY_PATH (default: shopwise/deploy) and PUBLIC_URL.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Image tag to deploy (a commit SHA from the release workflow, or latest)
+        required: true
+        default: latest
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      TAG: ${{ inputs.tag }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || 'shopwise/deploy' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          printf 'Host vm\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/id_deploy\n' \
+            "${{ secrets.DEPLOY_HOST }}" "${{ secrets.DEPLOY_USER }}" > ~/.ssh/config
+
+      - name: Validate the tag
+        run: |
+          case "$TAG" in
+            latest|[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;;
+            *) echo "Unexpected tag: $TAG" >&2; exit 1 ;;
+          esac
+
+      - name: Copy deploy files (never .env.prod)
+        run: |
+          ssh vm "mkdir -p '$DEPLOY_PATH'"
+          tar -C deploy --exclude='.env.prod' -czf - . | ssh vm "tar -C '$DEPLOY_PATH' -xzf -"
+
+      - name: Pull and restart
+        run: |
+          ssh vm "cd '$DEPLOY_PATH' \
+            && sed -i 's/^SHOPWISE_TAG=.*/SHOPWISE_TAG=$TAG/' .env.prod \
+            && docker compose -f docker-compose.prod.yml --env-file .env.prod pull backend web \
+            && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --remove-orphans"
+
+      - name: Check the site answers
+        if: vars.PUBLIC_URL != ''
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS "${{ vars.PUBLIC_URL }}/api/categories" > /dev/null; then
+              echo "Up on ${{ vars.PUBLIC_URL }}"; exit 0
+            fi
+            sleep 10
+          done
+          echo "The site did not answer after the deploy" >&2
+          exit 1

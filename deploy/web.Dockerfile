@@ -3,7 +3,8 @@
 # so the session and CSRF cookies are first-party. Build from the repository root:
 #   docker build -f deploy/web.Dockerfile .
 
-FROM node:22-alpine AS build
+# Built on the builder's own platform; the output is static files for any CPU.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
