@@ -1,0 +1,26 @@
+# SHOPWISE_DOMAIN is the public domain (Caddy gets an HTTPS certificate for it automatically),
+# or http://localhost to try the stack locally without TLS.
+{$SHOPWISE_DOMAIN:http://localhost} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	@backend path /api/* /oauth2/* /login/oauth2/*
+	handle @backend {
+		# Chat replies stream as server-sent events: don't buffer them.
+		reverse_proxy backend:8080 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

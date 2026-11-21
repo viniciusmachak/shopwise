@@ -149,7 +149,7 @@ Small recurring chores, like expiring pending actions, are plain `@Scheduled` me
 
 Locally, `deploy/docker-compose.yml` starts Postgres (pgvector image, on port 5433), Ollama with the embedding and chat models, and Mailpit for e-mails. The backend and frontend run from their folders. Cloud API keys and model names go in a git-ignored `.env` at the repo root, which the backend loads on startup. Without keys, the app runs in local mode. Prometheus and Grafana join the compose file with the production deploy.
 
-In production, the same compose file runs on an Oracle Cloud Always Free ARM VM (4 cores, 24 GB) behind Caddy for HTTPS. The frontend is a static build on Cloudflare Pages. A nightly `pg_dump` goes to Oracle's free object storage. E-mail goes through the Brevo or Resend free tier. GitHub Actions builds the image, pushes it to GHCR and deploys over SSH. DuckDNS gives a free domain.
+In production, `deploy/docker-compose.prod.yml` runs on an Oracle Cloud Always Free ARM VM (4 cores, 24 GB). Caddy serves the built frontend and proxies `/api` to the backend on the same domain, with HTTPS from Let's Encrypt. Keeping one domain matters: the session and CSRF cookies are first-party, which they wouldn't be with the frontend on a separate host. A daily `pg_dump` is kept on the VM and can be copied to Oracle's free object storage. E-mail goes through the Brevo or Resend free tier. GitHub Actions builds the images, pushes them to GHCR and deploys over SSH. DuckDNS gives a free domain. `deploy/README.md` has the steps.
 
 Rough memory use on the VM: Postgres 2 GB, backend 1 GB, Ollama with a quantized 8B model around 7 GB, monitoring 1 GB.
 
