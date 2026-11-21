@@ -30,6 +30,7 @@ The backend is one Spring Boot app split into packages under `com.shopwise`. Spr
 | `assistant` | the chat agent, its tools, conversation memory |
 | `notification` | order e-mails |
 | `backoffice` | admin screens, CSV import, assistant stats |
+| `recommendation` | similar products and what goes with them (order history, then complementary categories) |
 
 Modules publish events like `OrderPlaced` or `ProductUpdated`. Modulith stores them in Postgres until they're handled, so we get reliable delivery without running a message broker.
 
