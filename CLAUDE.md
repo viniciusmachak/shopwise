@@ -97,7 +97,7 @@ GitHub Actions.
 - Nightly: assistant evals in local mode, with Ollama running as a service container.
 - On merge to `main`:
   - Build the backend and web images for `linux/arm64`, tag them with the commit SHA, push them to GHCR. The web image is Caddy serving the frontend and proxying the API on one domain.
-- Deploy to production is a manual workflow: it SSHes into the Oracle VM, pulls the image and runs `docker compose up -d`. Flyway migrates on startup.
+- Deploy to production is a manual workflow (`deploy.yml`): it copies `deploy/` to the Oracle VM over SSH, sets the image tag, pulls and runs `docker compose up -d`. Flyway migrates on startup. Steps and secrets are in `deploy/README.md`.
 - Secrets (SSH key, cloud LLM keys) are stored as GitHub Actions secrets and in `.env` on the VM, never in the repo.
 
 ## Git

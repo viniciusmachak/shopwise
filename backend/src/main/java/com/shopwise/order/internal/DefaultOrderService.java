@@ -10,6 +10,8 @@ import java.util.Optional;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
+
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,9 +54,10 @@ class DefaultOrderService implements CheckoutService, OrderService, OrderAdmin {
     private final PaymentService payments;
     private final ShippingRates shippingRates;
     private final ApplicationEventPublisher events;
+    private final MeterRegistry meters;
 
     DefaultOrderService(OrderRepository orders, CartService carts, CustomerDirectory customers, StockService stock,
-            PaymentService payments, ShippingRates shippingRates, ApplicationEventPublisher events) {
+            PaymentService payments, ShippingRates shippingRates, ApplicationEventPublisher events, MeterRegistry meters) {
         this.orders = orders;
         this.carts = carts;
         this.customers = customers;
@@ -62,6 +65,10 @@ class DefaultOrderService implements CheckoutService, OrderService, OrderAdmin {
         this.payments = payments;
         this.shippingRates = shippingRates;
         this.events = events;
+        this.meters = meters;
+        // Registered up front so dashboards show 0 rather than "no data" before the first order.
+        meters.counter("shopwise.orders.placed");
+        meters.counter("shopwise.orders.cancelled");
     }
 
     @Override
@@ -130,6 +137,8 @@ class DefaultOrderService implements CheckoutService, OrderService, OrderAdmin {
         order.markPaid();
         carts.clear(cartKey);
         events.publishEvent(new OrderPlaced(order.id, customerId));
+        meters.counter("shopwise.orders.placed").increment();
+        meters.summary("shopwise.orders.revenue", "currency", order.currency).record(order.total.doubleValue());
         return toView(order);
     }
 
@@ -164,6 +173,7 @@ class DefaultOrderService implements CheckoutService, OrderService, OrderAdmin {
         stock.release(order.items.stream().map(i -> new StockChange(i.variantId, i.quantity)).toList());
         payments.refund(order.id);
         events.publishEvent(new OrderCancelled(order.id, order.customerId));
+        meters.counter("shopwise.orders.cancelled").increment();
         return order;
     }
 

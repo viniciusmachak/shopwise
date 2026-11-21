@@ -2,6 +2,9 @@ package com.shopwise.assistant.internal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
@@ -11,13 +14,21 @@ class JdbcUsageRecorder implements UsageRecorder {
     private static final Logger log = LoggerFactory.getLogger(JdbcUsageRecorder.class);
 
     private final JdbcClient jdbc;
+    private final MeterRegistry meters;
 
-    JdbcUsageRecorder(JdbcClient jdbc) {
+    JdbcUsageRecorder(JdbcClient jdbc, MeterRegistry meters) {
         this.jdbc = jdbc;
+        this.meters = meters;
     }
 
     @Override
     public void record(String provider, boolean ok, long promptTokens, long completionTokens) {
+        Counter.builder("shopwise.assistant.model.requests").description("Chat model attempts")
+                .tag("provider", provider).tag("outcome", ok ? "ok" : "failed").register(meters).increment();
+        Counter.builder("shopwise.assistant.model.tokens").description("Tokens reported by the provider")
+                .tag("provider", provider).tag("type", "prompt").register(meters).increment(promptTokens);
+        Counter.builder("shopwise.assistant.model.tokens").description("Tokens reported by the provider")
+                .tag("provider", provider).tag("type", "completion").register(meters).increment(completionTokens);
         try {
             jdbc.sql("""
                     insert into assistant_llm_usage (day, provider, requests, failures, prompt_tokens, completion_tokens)
