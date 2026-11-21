@@ -5,6 +5,20 @@ export type ConfirmRequest =
   | { token: string; action: 'checkout'; summary: CheckoutQuote; expiresAt: string }
   | { token: string; action: 'cancel'; summary: OrderView; expiresAt: string }
 
+/** Sent by the compareProducts tool over the chat stream (not part of the REST API). */
+export interface Comparison {
+  products: {
+    id: number
+    name: string
+    brand: string
+    category: string
+    price: number
+    attributes: Record<string, unknown>
+    sizesInStock: string[]
+  }[]
+  attributes: string[]
+}
+
 export type AssistantEvent =
   | { type: 'token'; text: string }
   | { type: 'tool_status'; tool: string }
@@ -13,6 +27,7 @@ export type AssistantEvent =
   | { type: 'ui.confirm'; request: ConfirmRequest }
   | { type: 'ui.order'; order: OrderView }
   | { type: 'ui.signin' }
+  | { type: 'ui.compare'; comparison: Comparison }
   | { type: 'error'; code: string; message: string }
   | { type: 'done' }
 
@@ -72,6 +87,10 @@ export function toAssistantEvent(type: string, data: string): AssistantEvent | n
       return { type, order: payload as OrderView }
     case 'ui.signin':
       return { type }
+    case 'ui.compare':
+      return Array.isArray(body.products) && Array.isArray(body.attributes)
+        ? { type, comparison: payload as Comparison }
+        : null
     case 'error':
       return { type, code: String(body.code ?? ''), message: String(body.message ?? '') }
     case 'done':

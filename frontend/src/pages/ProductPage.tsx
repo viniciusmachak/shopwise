@@ -3,12 +3,18 @@ import { useState } from 'react'
 import { useParams } from 'react-router'
 import { useAddToCart } from '../api/cart'
 import { api } from '../api/client'
+import { ProductCard } from '../components/ProductCard'
 import { formatMoney, t } from '../i18n'
 
 export function ProductPage() {
   const id = Number(useParams().id)
   const product = useQuery({ queryKey: ['product', id], queryFn: () => api.product(id), enabled: Number.isFinite(id) })
   const addToCart = useAddToCart()
+  const recommendations = useQuery({
+    queryKey: ['recommendations', id],
+    queryFn: () => api.recommendations(id),
+    enabled: Number.isFinite(id),
+  })
   const [variantId, setVariantId] = useState<number | undefined>()
 
   if (product.isError) return <p role="alert">{t('product.notFound')}</p>
@@ -54,6 +60,23 @@ export function ProductPage() {
         {addToCart.isSuccess && t('product.added')}
         {addToCart.isError && <span role="alert">{addToCart.error.message}</span>}
       </p>
+
+      {recommendations.data && recommendations.data.goesWith.length > 0 && (
+        <section className="recommendations">
+          <h2>{t('product.goesWith')}</h2>
+          <div className="grid">
+            {recommendations.data.goesWith.map((r) => <ProductCard key={r.id} product={r} />)}
+          </div>
+        </section>
+      )}
+      {recommendations.data && recommendations.data.similar.length > 0 && (
+        <section className="recommendations">
+          <h2>{t('product.similar')}</h2>
+          <div className="grid">
+            {recommendations.data.similar.map((r) => <ProductCard key={r.id} product={r} />)}
+          </div>
+        </section>
+      )}
     </article>
   )
 }

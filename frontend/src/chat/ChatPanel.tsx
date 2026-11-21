@@ -7,7 +7,8 @@ import { OrderCard } from '../components/OrderCard'
 import { ProductCard } from '../components/ProductCard'
 import { formatMoney, hasKey, t } from '../i18n'
 import { takeSentences, useVoice } from '../voice/useVoice'
-import { sendMessage, type AssistantEvent, type ConfirmRequest } from './assistant'
+import { sendMessage, type AssistantEvent, type Comparison, type ConfirmRequest } from './assistant'
+import { CompareCard } from './CompareCard'
 import { ConfirmCard } from './ConfirmCard'
 import { loadConversationId, newConversationId, onConversationChange, setConversationId } from './conversation'
 
@@ -22,6 +23,7 @@ type Message =
       confirm?: ConfirmRequest
       orders?: OrderView[]
       signIn?: boolean
+      comparison?: Comparison
       error?: string
     }
 
@@ -105,6 +107,9 @@ export function ChatPanel() {
             break
           case 'ui.signin':
             updateLast((m) => ({ ...m, signIn: true }))
+            break
+          case 'ui.compare':
+            updateLast((m) => ({ ...m, comparison: event.comparison }))
             break
           case 'error':
             updateLast((m) => ({ ...m, error: event.message }))
@@ -197,6 +202,7 @@ export function ChatPanel() {
                 {t('chat.cartUpdated', { count: m.cart.itemCount, total: formatMoney(m.cart.total) })}
               </p>
             )}
+            {m.role === 'assistant' && m.comparison && <CompareCard comparison={m.comparison} />}
             {m.role === 'assistant' && m.confirm && <ConfirmCard key={m.confirm.token} request={m.confirm} />}
             {m.role === 'assistant' &&
               m.orders?.map((order) => <OrderCard key={`${order.id}-${order.status}`} order={order} />)}
