@@ -87,6 +87,34 @@ services:
       - caddy-data:/data
       - caddy-config:/config
 
+  # Metrics. Neither is published to the internet: Grafana listens on the VM's localhost only,
+  # reach it with an SSH tunnel (ssh -L 3000:localhost:3000 <vm>).
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    ports:
+      - "127.0.0.1:${SHOPWISE_GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
   backup:
     image: pgvector/pgvector:pg17
     restart: unless-stopped
@@ -124,6 +152,8 @@ services:
       - backups:/backups:ro
 
 volumes:
+  prometheus-data:
+  grafana-data:
   postgres-data:
   ollama-data:
   caddy-data:
