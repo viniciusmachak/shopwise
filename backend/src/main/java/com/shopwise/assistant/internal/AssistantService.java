@@ -89,7 +89,8 @@ class AssistantService {
         var ui = new UiEvents();
         var tools = new ShopTools(search, catalog, carts, audit, cartKey, conversationId, ui, recommendations);
         var orderTools = new OrderTools(customerId, cartKey, conversationId, ui, checkout, orders, pending, audit);
-        var system = voice ? systemPrompt + "\n\n" + voicePrompt : systemPrompt;
+        var system = (voice ? systemPrompt + "\n\n" + voicePrompt : systemPrompt)
+                + confirmOrRemind(customerId, conversationId, text, orderTools);
 
         var started = System.nanoTime();
         var firstToken = new AtomicBoolean();
@@ -116,6 +117,36 @@ class AssistantService {
 
         return Flux.merge(ui.flux(), tokens)
                 .concatWith(Flux.just(event("done", Map.of("conversationId", conversationId))));
+    }
+
+    /**
+     * Tool results don't stay in the chat history, so on the next turn the model wouldn't know a
+     * summary is waiting for the user's answer. The server tells it, from the stored pending actions.
+     */
+    private String confirmOrRemind(@Nullable Long customerId, UUID conversationId, String text, OrderTools tools) {
+        if (customerId == null) {
+            return "";
+        }
+        var waiting = pending.waiting(customerId, conversationId);
+        if (waiting.isEmpty()) {
+            return "";
+        }
+        // A clear "yes" to the summary on screen is the same as pressing Confirm: carry it out on the
+        // server rather than hoping the model calls the tool, then let the model tell the user.
+        if (ConfirmationIntent.isClearYes(text)) {
+            var result = switch (waiting.getFirst().type()) {
+                case CHECKOUT -> tools.confirmCheckout();
+                case CANCEL_ORDER -> tools.confirmCancel();
+            };
+            return "\n\nThe user just confirmed and the store already carried it out. Result: " + result
+                    + "\nTell the user what happened in a sentence or two. Don't call confirmCheckout or confirmCancel again.";
+        }
+        var lines = new StringBuilder("\n\nWaiting for the user's answer in this conversation:");
+        waiting.stream().map(PendingActions.Waiting::type).distinct().forEach(type -> lines.append(switch (type) {
+            case CHECKOUT -> "\n- A checkout summary was shown. If the user's latest message confirms it, call confirmCheckout now.";
+            case CANCEL_ORDER -> "\n- A cancellation was shown. If the user's latest message confirms it, call confirmCancel now.";
+        }));
+        return lines.toString();
     }
 
     record HistoryMessage(String role, String text) {
