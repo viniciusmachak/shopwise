@@ -9,7 +9,8 @@ services:
     environment:
       POSTGRES_DB: shopwise
       POSTGRES_USER: shopwise
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      # Required: compose stops with an error if .env.prod doesn't set it.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
