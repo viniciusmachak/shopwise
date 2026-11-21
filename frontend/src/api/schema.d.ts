@@ -84,6 +84,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments/stripe/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["handle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{id}/cancel": {
         parameters: {
             query?: never;
@@ -861,6 +877,7 @@ export interface components {
             /** Format: date-time */
             deliveredAt: string | null;
             trackingNumber: string | null;
+            paymentUrl: string | null;
             items: components["schemas"]["OrderLine"][];
             subtotal: components["schemas"]["Money"];
             couponCode: string | null;
@@ -1396,6 +1413,30 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["AssistantStatus"];
                 };
+            };
+        };
+    };
+    handle: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Stripe-Signature"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
