@@ -14,4 +14,10 @@ public interface SearchService {
      * the embedding model is unavailable.
      */
     List<ProductSummary> search(SearchQuery query);
+
+    /**
+     * Products whose description is closest to this one's (by embedding), in the same category
+     * when {@code sameCategory} is set. Empty when the product has no embedding yet.
+     */
+    List<ProductSummary> similar(long productId, boolean sameCategory, int limit);
 }

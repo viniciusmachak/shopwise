@@ -92,6 +92,14 @@ management:
         shopwise.assistant.first.token: true
 
 shopwise:
+  recommendations:
+    # Categories whose products go well with each category, until order history says otherwise.
+    complements:
+      running-shoes: [t-shirts, backpacks, jackets]
+      hiking-boots: [backpacks, jackets, t-shirts]
+      jackets: [t-shirts, backpacks, hiking-boots]
+      backpacks: [jackets, hiking-boots, t-shirts]
+      t-shirts: [running-shoes, jackets, backpacks]
   admin:
     # Comma-separated e-mails that get the admin role (backoffice).
     emails: ${SHOPWISE_ADMIN_EMAILS:}
