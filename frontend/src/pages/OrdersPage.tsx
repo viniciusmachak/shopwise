@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router'
+import { Link, useLocation, useParams, useSearchParams } from 'react-router'
 import { api } from '../api/client'
 import { AddressText } from '../components/AddressFields'
 import { formatMoney, t } from '../i18n'
@@ -28,7 +28,15 @@ export function OrderPage() {
   const id = Number(useParams().id)
   const location = useLocation()
   const client = useQueryClient()
-  const order = useQuery({ queryKey: ['order', id], queryFn: () => api.order(id) })
+  const [params] = useSearchParams()
+  const returnedFromPayment = params.get('payment')
+  const order = useQuery({
+    queryKey: ['order', id],
+    queryFn: () => api.order(id),
+    // After paying on Stripe, the confirmation arrives a moment later: check again until it does.
+    refetchInterval: (query) =>
+      returnedFromPayment === 'success' && query.state.data?.status === 'PENDING_PAYMENT' ? 2000 : false,
+  })
   const [confirming, setConfirming] = useState(false)
   const cancel = useMutation({
     mutationFn: () => api.cancelOrder(id),
@@ -46,7 +54,16 @@ export function OrderPage() {
 
   return (
     <article className="order-page">
-      {placed && o.status === 'PAID' && <p role="status">{t('orders.thanks')}</p>}
+      {(placed || returnedFromPayment === 'success') && o.status === 'PAID' && <p role="status">{t('orders.thanks')}</p>}
+      {o.status === 'PENDING_PAYMENT' && returnedFromPayment === 'success' && (
+        <p role="status">{t('orders.confirmingPayment')}</p>
+      )}
+      {o.status === 'PENDING_PAYMENT' && returnedFromPayment !== 'success' && (
+        <p role="status">
+          {returnedFromPayment === 'cancelled' ? t('orders.paymentCancelled') : t('orders.awaitingPayment')}{' '}
+          {o.paymentUrl && <a href={o.paymentUrl}>{t('orders.payNow')}</a>}
+        </p>
+      )}
       <h1>{t('orders.number', { id: o.id })}</h1>
       <p>
         {statusLabel(o.status)} · {t('orders.placedOn', { date: formatDate(o.placedAt) })}

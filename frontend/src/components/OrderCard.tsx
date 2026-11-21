@@ -15,6 +15,11 @@ export function OrderCard({ order }: { order: OrderView }) {
       <p className="muted">
         {order.items.map((i) => `${i.quantity} × ${i.productName}${i.size ? ` (${i.size})` : ''}`).join(', ')}
       </p>
+      {order.paymentUrl && (
+        <p>
+          <a href={order.paymentUrl}>{t('orders.payNow')}</a>
+        </p>
+      )}
     </article>
   )
 }

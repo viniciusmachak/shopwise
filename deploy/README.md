@@ -34,6 +34,7 @@ Production runs on one VM (planned: Oracle Cloud Always Free, ARM, 4 cores / 24 
    ```
 
 6. Sign up in the store with an e-mail listed in `SHOPWISE_ADMIN_EMAILS` to get the backoffice.
+7. For card payments, set `STRIPE_SECRET_KEY` and create a webhook endpoint in the Stripe dashboard pointing to `https://<domain>/api/payments/stripe/webhook` with the events `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed`. Put its signing secret in `STRIPE_WEBHOOK_SECRET`. Use test keys until you're ready to take real payments.
 
 The first start pulls the Ollama models (about 5 GB), so the assistant needs a few minutes before local mode answers.
 

@@ -192,13 +192,16 @@ class OrderTools {
     }
 
     record OrderInfo(long orderId, OrderStatus status, Instant placedAt, List<String> items, BigDecimal total,
-            String shipTo, boolean cancellable, @Nullable String trackingNumber) {
+            String shipTo, boolean cancellable, @Nullable String trackingNumber, @Nullable String next) {
 
         static OrderInfo of(OrderView o) {
             return new OrderInfo(o.id(), o.status(), o.placedAt(),
                     o.items().stream().map(i -> i.quantity() + " x " + i.productName()
                             + (i.size() == null ? "" : " (size " + i.size() + ")")).toList(),
-                    o.total().amount(), o.shippingAddress().shortLabel(), o.cancellable(), o.trackingNumber());
+                    o.total().amount(), o.shippingAddress().shortLabel(), o.cancellable(), o.trackingNumber(),
+                    o.status() == OrderStatus.PENDING_PAYMENT
+                            ? "The order waits for payment. Tell the user to press Pay now on the order card to pay securely on Stripe."
+                            : null);
         }
     }
 }

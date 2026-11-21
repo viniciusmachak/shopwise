@@ -1,6 +1,7 @@
 package com.shopwise.order.internal;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
@@ -9,7 +10,9 @@ import java.util.Locale;
 import java.util.Optional;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.modulith.events.ApplicationModuleListener;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.data.domain.PageRequest;
@@ -41,7 +44,11 @@ import com.shopwise.order.OrderSummary;
 import com.shopwise.order.OrderView;
 import com.shopwise.order.PlaceOrderRequest;
 import com.shopwise.order.ShippingOption;
+import com.shopwise.payment.PaymentConfirmed;
+import com.shopwise.payment.PaymentExpired;
+import com.shopwise.payment.PaymentRequest;
 import com.shopwise.payment.PaymentService;
+import com.shopwise.payment.PaymentStart;
 
 @Service
 @Transactional
@@ -55,9 +62,11 @@ class DefaultOrderService implements CheckoutService, OrderService, OrderAdmin {
     private final ShippingRates shippingRates;
     private final ApplicationEventPublisher events;
     private final MeterRegistry meters;
+    private final String frontendUrl;
 
     DefaultOrderService(OrderRepository orders, CartService carts, CustomerDirectory customers, StockService stock,
-            PaymentService payments, ShippingRates shippingRates, ApplicationEventPublisher events, MeterRegistry meters) {
+            PaymentService payments, ShippingRates shippingRates, ApplicationEventPublisher events, MeterRegistry meters,
+            @Value("${shopwise.web.frontend-url:http://localhost:5173}") String frontendUrl) {
         this.orders = orders;
         this.carts = carts;
         this.customers = customers;
@@ -66,6 +75,7 @@ class DefaultOrderService implements CheckoutService, OrderService, OrderAdmin {
         this.shippingRates = shippingRates;
         this.events = events;
         this.meters = meters;
+        this.frontendUrl = frontendUrl.replaceAll("/$", "");
         // Registered up front so dashboards show 0 rather than "no data" before the first order.
         meters.counter("shopwise.orders.placed");
         meters.counter("shopwise.orders.cancelled");
@@ -125,21 +135,57 @@ class DefaultOrderService implements CheckoutService, OrderService, OrderAdmin {
         }
 
         var order = new Order(customerId, request.idempotencyKey());
+        order.cartKey = cartKey.value();
         fill(order, cart, quote, address);
         orders.saveAndFlush(order);
 
-        var payment = payments.charge(order.id, quote.total());
-        if (!payment.approved()) {
-            // Rolls back the order and the stock reservation.
-            throw new CheckoutException(Reason.PAYMENT_DECLINED,
-                    payment.declineReason() == null ? "The payment was declined." : payment.declineReason());
+        var started = payments.start(new PaymentRequest(order.id, quote.total(), "Shopwise order #" + order.id,
+                frontendUrl + "/orders/" + order.id + "?payment=success",
+                frontendUrl + "/orders/" + order.id + "?payment=cancelled"));
+        switch (started) {
+            case PaymentStart.Paid paid -> completePayment(order);
+            case PaymentStart.Declined declined ->
+                // Rolls back the order and the stock reservation.
+                throw new CheckoutException(Reason.PAYMENT_DECLINED, declined.reason());
+            case PaymentStart.Redirect redirect ->
+                // Stock stays reserved and the cart stays as it is until the customer pays.
+                order.awaitPayment(redirect.url(), redirect.expiresAt());
         }
+        return toView(order);
+    }
+
+    /** Payment is done: the order is placed and the cart it came from is emptied. */
+    private void completePayment(Order order) {
         order.markPaid();
-        carts.clear(cartKey);
-        events.publishEvent(new OrderPlaced(order.id, customerId));
+        if (order.cartKey != null) {
+            carts.clear(new CartKey(order.cartKey));
+        }
+        events.publishEvent(new OrderPlaced(order.id, order.customerId));
         meters.counter("shopwise.orders.placed").increment();
         meters.summary("shopwise.orders.revenue", "currency", order.currency).record(order.total.doubleValue());
-        return toView(order);
+    }
+
+    @ApplicationModuleListener
+    void on(PaymentConfirmed event) {
+        orders.findById(event.orderId())
+                .filter(o -> o.status == OrderStatus.PENDING_PAYMENT)
+                .ifPresent(this::completePayment);
+    }
+
+    @ApplicationModuleListener
+    void on(PaymentExpired event) {
+        orders.findById(event.orderId())
+                .filter(o -> o.status == OrderStatus.PENDING_PAYMENT)
+                .ifPresent(order -> {
+                    order.expire();
+                    stock.release(order.items.stream().map(i -> new StockChange(i.variantId, i.quantity)).toList());
+                });
+    }
+
+    /** Payments whose checkout ended a while ago without word from the provider. */
+    @Transactional(readOnly = true)
+    List<Long> overduePayments(Instant before) {
+        return orders.findOverduePayments(before);
     }
 
     @Override
@@ -282,7 +328,10 @@ class DefaultOrderService implements CheckoutService, OrderService, OrderAdmin {
                 .toList();
         var address = new OrderView.ShippingAddress(o.shipRecipient, o.shipLine1, o.shipLine2, o.shipCity, o.shipState,
                 o.shipPostalCode, o.shipCountry);
-        return new OrderView(o.id, o.status, o.placedAt, o.cancelledAt, o.shippedAt, o.deliveredAt, o.trackingNumber, items, new Money(o.subtotal, o.currency),
+        var payLink = o.status == OrderStatus.PENDING_PAYMENT && o.paymentExpiresAt != null
+                && o.paymentExpiresAt.isAfter(Instant.now()) ? o.paymentUrl : null;
+        return new OrderView(o.id, o.status, o.placedAt, o.cancelledAt, o.shippedAt, o.deliveredAt, o.trackingNumber,
+                payLink, items, new Money(o.subtotal, o.currency),
                 o.couponCode, new Money(o.discount, o.currency), o.shippingOption, new Money(o.shipping, o.currency),
                 new Money(o.total, o.currency), address, o.isCancellable());
     }

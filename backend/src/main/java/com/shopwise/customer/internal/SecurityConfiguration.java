@@ -32,7 +32,8 @@ class SecurityConfiguration {
                                 "/actuator/prometheus").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .anyRequest().permitAll())
-                .csrf(csrf -> csrf.spa())
+                // Stripe's servers call the webhook; it's protected by Stripe's signature instead.
+                .csrf(csrf -> csrf.spa().ignoringRequestMatchers("/api/payments/stripe/webhook"))
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .logout(logout -> logout

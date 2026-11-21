@@ -8,7 +8,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   const location = useLocation()
   if (session.isPending) return null
   if (!session.data?.authenticated) {
-    return <Navigate to={`/sign-in?next=${encodeURIComponent(location.pathname)}`} replace />
+    return <Navigate to={`/sign-in?next=${encodeURIComponent(location.pathname + location.search)}`} replace />
   }
   if (!session.data.customer?.admin) return <p role="alert">{t('admin.forbidden')}</p>
   return <>{children}</>

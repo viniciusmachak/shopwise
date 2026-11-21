@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import com.shopwise.order.OrderStatus;
 import com.shopwise.order.ShippingOption;
@@ -75,6 +76,12 @@ class Order {
 
     String trackingNumber;
 
+    UUID cartKey;
+
+    String paymentUrl;
+
+    Instant paymentExpiresAt;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id")
     List<OrderItem> items = new ArrayList<>();
@@ -94,7 +101,22 @@ class Order {
 
     void markPaid() {
         status = OrderStatus.PAID;
+        paymentUrl = null;
         updatedAt = Instant.now();
+    }
+
+    void awaitPayment(String url, Instant expiresAt) {
+        paymentUrl = url;
+        paymentExpiresAt = expiresAt;
+        updatedAt = Instant.now();
+    }
+
+    /** The customer never paid: the order is dropped. */
+    void expire() {
+        status = OrderStatus.CANCELLED;
+        paymentUrl = null;
+        cancelledAt = Instant.now();
+        updatedAt = cancelledAt;
     }
 
     void ship(String trackingNumber) {

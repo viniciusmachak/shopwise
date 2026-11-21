@@ -62,7 +62,7 @@ describe('admin pages', () => {
     const order = (status: string) => ({
       order: {
         id: 7, status, placedAt: '2026-11-10T12:00:00Z', cancelledAt: null, shippedAt: null, deliveredAt: null,
-        trackingNumber: status === 'SHIPPED' ? '1Z99' : null, items: [], subtotal: { amount: 10, currency: 'USD' },
+        trackingNumber: status === 'SHIPPED' ? '1Z99' : null, paymentUrl: null, items: [], subtotal: { amount: 10, currency: 'USD' },
         couponCode: null, discount: { amount: 0, currency: 'USD' }, shippingOption: 'STANDARD',
         shipping: { amount: 5, currency: 'USD' }, total: { amount: 15, currency: 'USD' },
         shippingAddress: { recipient: 'Pat', line1: '1 Main St', line2: null, city: 'Springfield', state: 'IL', postalCode: '62701', country: 'US' },
