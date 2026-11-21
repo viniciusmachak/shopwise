@@ -9,6 +9,7 @@ export type CartView = Schemas['CartView']
 export type CartLine = Schemas['CartLine']
 export type Money = Schemas['Money']
 export type ProductPage = Schemas['PagedModelProductSummary']
+export type Recommendations = Schemas['Recommendations']
 export type SessionView = Schemas['SessionView']
 export type MeView = Schemas['MeView']
 export type AddressView = Schemas['AddressView']
@@ -104,6 +105,7 @@ export const api = {
   products: (filters: ProductFilters) => request<ProductPage>(`/api/products${query({ ...filters })}`),
   product: (id: number) => request<ProductDetail>(`/api/products/${id}`),
   search: (q: string) => request<ProductSummary[]>(`/api/search${query({ q })}`),
+  recommendations: (id: number) => request<Recommendations>(`/api/products/${id}/recommendations`),
 
   cart: () => request<CartView>('/api/cart'),
   addToCart: (variantId: number, quantity: number) => post<CartView>('/api/cart/items', { variantId, quantity }),

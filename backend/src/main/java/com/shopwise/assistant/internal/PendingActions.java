@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -143,6 +144,23 @@ class PendingActions {
                 .param("type", type.name())
                 .query(String.class)
                 .optional();
+    }
+
+    /** What is waiting for the customer's confirmation in this conversation, newest first. */
+    List<Waiting> waiting(long customerId, UUID conversationId) {
+        return jdbc.sql("""
+                select type, order_id from pending_action
+                where customer_id = :customer and conversation_id = :conversation
+                  and used_at is null and discarded_at is null and expires_at > now()
+                order by created_at desc
+                """)
+                .param("customer", customerId)
+                .param("conversation", conversationId)
+                .query((rs, n) -> new Waiting(Type.valueOf(rs.getString("type")), (Long) rs.getObject("order_id")))
+                .list();
+    }
+
+    record Waiting(Type type, Long orderId) {
     }
 
     void discard(String token, long customerId) {

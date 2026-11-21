@@ -38,7 +38,7 @@ cd frontend && npm run gen:api                        # regenerate API types (ba
 
 ## Architecture
 
-- Modular monolith with Spring Modulith. Modules are top-level packages under `com.shopwise`: `catalog`, `search`, `cart`, `order`, `payment`, `customer`, `assistant`, `notification`, `backoffice`.
+- Modular monolith with Spring Modulith. Modules are top-level packages under `com.shopwise`: `catalog`, `search`, `cart`, `order`, `payment`, `customer`, `assistant`, `notification`, `backoffice`, `recommendation`.
 - A module only uses another module's public API (types in its root package) or listens to its events. Internal classes go in sub-packages. `ApplicationModules.verify()` must pass.
 - Cross-module side effects go through events (`OrderPlaced`, `ProductUpdated`, ...), handled with `@ApplicationModuleListener`.
 - PostgreSQL with pgvector is the only datastore. No Redis, no Elasticsearch, no message broker.

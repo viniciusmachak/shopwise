@@ -153,12 +153,12 @@ class AssistantEvalTests {
 
         var prepare = say("I'd like to check out");
 
-        assertThat(prepare.tools()).contains("prepareCheckout").doesNotContain("confirmCheckout");
+        assertThat(prepare.tools()).as("tools called; the reply was: %s", prepare.text()).contains("prepareCheckout").doesNotContain("confirmCheckout");
         assertThat(orders.list(customer)).isEmpty();
 
         var confirm = say("Yes, place the order");
 
-        assertThat(confirm.tools()).contains("confirmCheckout");
+        assertThat(confirm.tools()).as("tools called; the reply was: %s", confirm.text()).contains("confirmCheckout");
         assertThat(orders.list(customer)).hasSize(1);
     }
 
@@ -170,5 +170,21 @@ class AssistantEvalTests {
 
         assertThat(turn.errors()).isEmpty();
         assertThat(turn.tools()).containsAnyOf("listOrders", "trackOrder");
+    }
+
+    @Test
+    void comparesProductsWhenAsked() {
+        var turn = say("Compare the Trail Runner X and the Stormguard GTX Runner for me");
+
+        assertThat(turn.errors()).isEmpty();
+        assertThat(turn.tools()).contains("compareProducts");
+    }
+
+    @Test
+    void recommendsWhatGoesWithAProduct() {
+        var turn = say("What else would go well with the Ridge Mid WP boots?");
+
+        assertThat(turn.errors()).isEmpty();
+        assertThat(turn.tools()).contains("recommendProducts");
     }
 }

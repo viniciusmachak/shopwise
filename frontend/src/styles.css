@@ -226,3 +226,11 @@ body {
 .transcript li.user {
   font-weight: 500;
 }
+
+.compare-card {
+  overflow-x: auto;
+}
+
+.recommendations {
+  margin-top: 2rem;
+}

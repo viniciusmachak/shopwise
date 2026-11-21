@@ -1,6 +1,7 @@
 package com.shopwise.assistant.internal;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -18,6 +19,7 @@ import com.shopwise.cart.CartService;
 import com.shopwise.cart.CartView;
 import com.shopwise.catalog.CatalogService;
 import com.shopwise.catalog.ProductSummary;
+import com.shopwise.recommendation.RecommendationService;
 import com.shopwise.search.SearchQuery;
 import com.shopwise.search.SearchService;
 
@@ -38,9 +40,11 @@ class ShopTools {
     private final CartKey cartKey;
     private final UUID conversationId;
     private final UiEvents ui;
+    private final RecommendationService recommendations;
 
     ShopTools(SearchService search, CatalogService catalog, CartService carts, AuditLog audit, CartKey cartKey,
-            UUID conversationId, UiEvents ui) {
+            UUID conversationId, UiEvents ui, RecommendationService recommendations) {
+        this.recommendations = recommendations;
         this.search = search;
         this.catalog = catalog;
         this.carts = carts;
@@ -75,6 +79,54 @@ class ShopTools {
                             p.variants().stream().map(v -> new SizeOption(v.size(), v.stock() > 0)).toList());
                 })
                 .orElse(new ToolError("No product with id " + productId + "."));
+    }
+
+    @Tool(description = """
+            Compare two to four products side by side: price, brand, attributes and sizes in stock.
+            Use it when the user asks to compare products or which one is better for something.""")
+    Object compareProducts(
+            @ToolParam(description = "Names of the products to compare, as shown in search results") List<String> productNames) {
+        status("compareProducts");
+        if (productNames == null || productNames.size() < 2) {
+            return new ToolError("Give at least two products to compare.");
+        }
+        var compared = new ArrayList<Comparison.Item>();
+        for (var name : productNames.stream().distinct().limit(4).toList()) {
+            var resolved = resolveProduct(name);
+            if (resolved instanceof ToolError error) {
+                return error;
+            }
+            catalog.findProduct((Long) resolved).ifPresent(p -> compared.add(new Comparison.Item(p.id(), p.name(),
+                    p.brand(), p.category(), p.price().amount(), p.attributes(),
+                    p.variants().stream().filter(v -> v.stock() > 0).map(v -> v.size() == null ? "one size" : v.size()).toList())));
+        }
+        var attributes = compared.stream().flatMap(i -> i.attributes().keySet().stream()).distinct().sorted().toList();
+        var comparison = new Comparison(compared, attributes);
+        ui.emit("ui.compare", comparison);
+        return comparison;
+    }
+
+    @Tool(description = """
+            Recommend products related to one product. kind "similar" finds alternatives to it; kind "goes_with"
+            finds products to buy with it (often bought together, or from complementary categories).""")
+    Object recommendProducts(
+            @ToolParam(description = "Product name, as shown in search results") String productName,
+            @ToolParam(required = false, description = "similar or goes_with, default similar") String kind) {
+        status("recommendProducts");
+        var resolved = resolveProduct(productName);
+        if (resolved instanceof ToolError error) {
+            return error;
+        }
+        var found = recommendations.forProduct((Long) resolved, 4);
+        if (found.isEmpty()) {
+            return new ToolError("No recommendations for " + productName + ".");
+        }
+        var products = "goes_with".equalsIgnoreCase(kind) ? found.get().goesWith() : found.get().similar();
+        if (products.isEmpty()) {
+            return new ToolError("No recommendations for " + productName + " yet.");
+        }
+        ui.emit("ui.products", products);
+        return new SearchResult(products.stream().map(ProductBrief::of).toList());
     }
 
     @Tool(description = "Show what is in the user's cart.")
@@ -244,6 +296,13 @@ class ShopTools {
     }
 
     record SearchResult(List<ProductBrief> products) {
+    }
+
+    record Comparison(List<Item> products, List<String> attributes) {
+
+        record Item(long id, String name, String brand, String category, BigDecimal price,
+                Map<String, Object> attributes, List<String> sizesInStock) {
+        }
     }
 
     record SizeOption(String size, boolean inStock) {

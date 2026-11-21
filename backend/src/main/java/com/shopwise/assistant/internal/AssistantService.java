@@ -27,6 +27,7 @@ import com.shopwise.cart.CartService;
 import com.shopwise.catalog.CatalogService;
 import com.shopwise.order.CheckoutService;
 import com.shopwise.order.OrderService;
+import com.shopwise.recommendation.RecommendationService;
 import com.shopwise.search.SearchService;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -48,12 +49,13 @@ class AssistantService {
     private final PendingActions pending;
     private final ChatMemoryRepository memoryRepository;
     private final Timer firstTokenTimer;
+    private final RecommendationService recommendations;
     private final String systemPrompt;
     private final String voicePrompt;
 
     AssistantService(RoutingChatModel chatModel, ChatMemoryRepository memoryRepository, SearchService search,
             CatalogService catalog, CartService carts, AuditLog audit, CheckoutService checkout, OrderService orders,
-            PendingActions pending, MeterRegistry meters,
+            PendingActions pending, MeterRegistry meters, RecommendationService recommendations,
             @Value("classpath:prompts/system.md") Resource systemPrompt,
             @Value("classpath:prompts/voice.md") Resource voicePrompt) throws IOException {
         ChatMemory memory = MessageWindowChatMemory.builder()
@@ -71,6 +73,7 @@ class AssistantService {
         this.orders = orders;
         this.pending = pending;
         this.memoryRepository = memoryRepository;
+        this.recommendations = recommendations;
         this.firstTokenTimer = Timer.builder("shopwise.assistant.first.token")
                 .description("Time from a customer message to the first token of the reply")
                 .register(meters);
@@ -84,9 +87,10 @@ class AssistantService {
     Flux<ServerSentEvent<Object>> reply(UUID conversationId, CartKey cartKey, @Nullable Long customerId, String text,
             boolean voice) {
         var ui = new UiEvents();
-        var tools = new ShopTools(search, catalog, carts, audit, cartKey, conversationId, ui);
+        var tools = new ShopTools(search, catalog, carts, audit, cartKey, conversationId, ui, recommendations);
         var orderTools = new OrderTools(customerId, cartKey, conversationId, ui, checkout, orders, pending, audit);
-        var system = voice ? systemPrompt + "\n\n" + voicePrompt : systemPrompt;
+        var system = (voice ? systemPrompt + "\n\n" + voicePrompt : systemPrompt)
+                + confirmOrRemind(customerId, conversationId, text, orderTools);
 
         var started = System.nanoTime();
         var firstToken = new AtomicBoolean();
@@ -113,6 +117,36 @@ class AssistantService {
 
         return Flux.merge(ui.flux(), tokens)
                 .concatWith(Flux.just(event("done", Map.of("conversationId", conversationId))));
+    }
+
+    /**
+     * Tool results don't stay in the chat history, so on the next turn the model wouldn't know a
+     * summary is waiting for the user's answer. The server tells it, from the stored pending actions.
+     */
+    private String confirmOrRemind(@Nullable Long customerId, UUID conversationId, String text, OrderTools tools) {
+        if (customerId == null) {
+            return "";
+        }
+        var waiting = pending.waiting(customerId, conversationId);
+        if (waiting.isEmpty()) {
+            return "";
+        }
+        // A clear "yes" to the summary on screen is the same as pressing Confirm: carry it out on the
+        // server rather than hoping the model calls the tool, then let the model tell the user.
+        if (ConfirmationIntent.isClearYes(text)) {
+            var result = switch (waiting.getFirst().type()) {
+                case CHECKOUT -> tools.confirmCheckout();
+                case CANCEL_ORDER -> tools.confirmCancel();
+            };
+            return "\n\nThe user just confirmed and the store already carried it out. Result: " + result
+                    + "\nTell the user what happened in a sentence or two. Don't call confirmCheckout or confirmCancel again.";
+        }
+        var lines = new StringBuilder("\n\nWaiting for the user's answer in this conversation:");
+        waiting.stream().map(PendingActions.Waiting::type).distinct().forEach(type -> lines.append(switch (type) {
+            case CHECKOUT -> "\n- A checkout summary was shown. If the user's latest message confirms it, call confirmCheckout now.";
+            case CANCEL_ORDER -> "\n- A cancellation was shown. If the user's latest message confirms it, call confirmCancel now.";
+        }));
+        return lines.toString();
     }
 
     record HistoryMessage(String role, String text) {

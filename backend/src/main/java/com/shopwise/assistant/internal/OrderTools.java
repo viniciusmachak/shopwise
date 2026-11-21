@@ -80,7 +80,9 @@ class OrderTools {
                 "Ask the user to confirm. Call confirmCheckout only after they clearly say yes.");
     }
 
-    @Tool(description = "Place the order whose summary was shown to the user. Only call it after the user clearly said yes to that summary.")
+    @Tool(description = """
+            Place the order whose summary was shown to the user. This is the only way to place an order: call it
+            as soon as the user clearly says yes to that summary, and never claim an order is placed without it.""")
     Object confirmCheckout() {
         return confirmLatest("confirmCheckout", PendingActions.Type.CHECKOUT);
     }

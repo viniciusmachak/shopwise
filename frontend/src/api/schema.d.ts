@@ -532,6 +532,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/products/{id}/recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["forProduct"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders": {
         parameters: {
             query?: never;
@@ -1105,6 +1121,10 @@ export interface components {
             price: components["schemas"]["Money"];
             /** Format: int32 */
             stock: number;
+        };
+        Recommendations: {
+            similar: components["schemas"]["ProductSummary"][];
+            goesWith: components["schemas"]["ProductSummary"][];
         };
         OrderSummary: {
             /** Format: int64 */
@@ -2202,6 +2222,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ProductDetail"];
+                };
+            };
+        };
+    };
+    forProduct: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Recommendations"];
                 };
             };
         };

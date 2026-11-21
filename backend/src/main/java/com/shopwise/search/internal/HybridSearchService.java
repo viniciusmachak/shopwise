@@ -81,4 +81,22 @@ class HybridSearchService implements SearchService {
         List<Long> ids = statement.query(Long.class).list();
         return catalog.findSummaries(ids);
     }
+
+    @Override
+    public List<ProductSummary> similar(long productId, boolean sameCategory, int limit) {
+        List<Long> ids = jdbc.sql("""
+                select d.product_id from search_document d, search_document me
+                where me.product_id = :id and me.embedding is not null and d.embedding is not null
+                  and d.product_id <> me.product_id
+                  and (not :sameCategory or d.category = me.category)
+                order by d.in_stock desc, d.embedding <=> me.embedding
+                limit :limit
+                """)
+                .param("id", productId)
+                .param("sameCategory", sameCategory)
+                .param("limit", Math.clamp(limit, 1, 20))
+                .query(Long.class)
+                .list();
+        return catalog.findSummaries(ids);
+    }
 }

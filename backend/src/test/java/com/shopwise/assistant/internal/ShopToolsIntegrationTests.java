@@ -35,6 +35,9 @@ class ShopToolsIntegrationTests {
     AuditLog audit;
 
     @Autowired
+    com.shopwise.recommendation.RecommendationService recommendations;
+
+    @Autowired
     JdbcClient jdbc;
 
     private final CartKey cartKey = CartKey.random();
@@ -42,7 +45,7 @@ class ShopToolsIntegrationTests {
     private final UiEvents ui = new UiEvents();
 
     private ShopTools tools() {
-        return new ShopTools(search, catalog, carts, audit, cartKey, conversationId, ui);
+        return new ShopTools(search, catalog, carts, audit, cartKey, conversationId, ui, recommendations);
     }
 
     private long productId(String slug) {
@@ -151,5 +154,31 @@ class ShopToolsIntegrationTests {
 
         assertThat(result).isInstanceOf(CartSummary.class);
         assertThat(carts.view(cartKey).items()).isEmpty();
+    }
+
+    @Test
+    void comparesProductsSideBySide() {
+        var result = tools().compareProducts(java.util.List.of("Trail Runner X", "Stormguard GTX Runner"));
+        ui.complete();
+
+        assertThat(result).isInstanceOfSatisfying(ShopTools.Comparison.class, c -> {
+            assertThat(c.products()).extracting(ShopTools.Comparison.Item::name)
+                    .containsExactly("Trail Runner X", "Stormguard GTX Runner");
+            assertThat(c.attributes()).contains("waterproof", "terrain");
+        });
+        assertThat(ui.flux().map(e -> e.event()).collectList().block()).contains("ui.compare");
+    }
+
+    @Test
+    void comparingNeedsTwoKnownProducts() {
+        assertThat(tools().compareProducts(java.util.List.of("Trail Runner X"))).isInstanceOf(ToolError.class);
+        assertThat(tools().compareProducts(java.util.List.of("Trail Runner X", "Moon Boots 3000")))
+                .isInstanceOf(ToolError.class);
+    }
+
+    @Test
+    void recommendsWhatGoesWithAProduct() {
+        assertThat(tools().recommendProducts("Ridge Mid WP", "goes_with"))
+                .isInstanceOfSatisfying(ShopTools.SearchResult.class, r -> assertThat(r.products()).isNotEmpty());
     }
 }
