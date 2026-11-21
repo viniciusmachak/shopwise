@@ -1,5 +1,6 @@
 package com.shopwise.order.internal;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,4 +30,10 @@ interface OrderRepository extends JpaRepository<Order, Long> {
             order by o.placedAt desc
             """)
     List<Order> findForBackoffice(OrderStatus status, Pageable page);
+
+    @Query("""
+            select o.id from Order o
+            where o.status = com.shopwise.order.OrderStatus.PENDING_PAYMENT and o.paymentExpiresAt < :before
+            """)
+    List<Long> findOverduePayments(Instant before);
 }

@@ -11,6 +11,8 @@ export function statusLabel(status: OrderView['status']): string {
       return t('orders.status.delivered')
     case 'CANCELLED':
       return t('orders.status.cancelled')
+    case 'PENDING_PAYMENT':
+      return t('orders.status.awaitingPayment')
     default:
       return t('orders.status.processing')
   }

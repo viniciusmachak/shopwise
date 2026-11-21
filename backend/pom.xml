@@ -22,6 +22,7 @@
         <spring-ai.version>2.0.2</spring-ai.version>
         <spring-modulith.version>2.1.2</spring-modulith.version>
         <springdoc.version>3.2.0</springdoc.version>
+        <stripe.version>34.2.0</stripe.version>
         <surefire.groups/>
         <surefire.excludedGroups>eval</surefire.excludedGroups>
     </properties>
@@ -89,6 +90,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-batch-jdbc</artifactId>
+        </dependency>
+
+        <!-- Card payments through Stripe Checkout (test mode until going live) -->
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>${stripe.version}</version>
         </dependency>
 
         <!-- Transactional e-mail -->

@@ -25,9 +25,13 @@ export function CheckoutPage() {
       return api.placeOrder(q.address!.id, shipping, q.cartHash, idempotencyKey)
     },
     onSuccess: (order) => {
-      client.setQueryData(cartKey, undefined)
       void client.invalidateQueries({ queryKey: cartKey })
       void client.invalidateQueries({ queryKey: ['orders'] })
+      if (order.paymentUrl) {
+        // Card payment happens on Stripe's page; Stripe sends the customer back to the order.
+        window.location.assign(order.paymentUrl)
+        return
+      }
       navigate(`/orders/${order.id}`, { state: { placed: true } })
     },
     onError: (error) => {
@@ -118,7 +122,7 @@ export function CheckoutPage() {
           <strong>{formatMoney(q.total)}</strong>
         </dd>
       </dl>
-      <p className="muted">{t('checkout.simulatedPayment')}</p>
+      <p className="muted">{t('checkout.paymentNote')}</p>
       {place.isError && <p role="alert">{place.error.message}</p>}
       <button type="button" disabled={!selectedAddress || place.isPending} onClick={() => place.mutate()}>
         {t('checkout.placeOrder', { total: formatMoney(q.total) })}
