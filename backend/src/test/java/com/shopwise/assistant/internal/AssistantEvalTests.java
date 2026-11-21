@@ -171,4 +171,20 @@ class AssistantEvalTests {
         assertThat(turn.errors()).isEmpty();
         assertThat(turn.tools()).containsAnyOf("listOrders", "trackOrder");
     }
+
+    @Test
+    void comparesProductsWhenAsked() {
+        var turn = say("Compare the Trail Runner X and the Stormguard GTX Runner for me");
+
+        assertThat(turn.errors()).isEmpty();
+        assertThat(turn.tools()).contains("compareProducts");
+    }
+
+    @Test
+    void recommendsWhatGoesWithAProduct() {
+        var turn = say("What else would go well with the Ridge Mid WP boots?");
+
+        assertThat(turn.errors()).isEmpty();
+        assertThat(turn.tools()).contains("recommendProducts");
+    }
 }

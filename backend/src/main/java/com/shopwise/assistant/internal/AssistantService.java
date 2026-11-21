@@ -27,6 +27,7 @@ import com.shopwise.cart.CartService;
 import com.shopwise.catalog.CatalogService;
 import com.shopwise.order.CheckoutService;
 import com.shopwise.order.OrderService;
+import com.shopwise.recommendation.RecommendationService;
 import com.shopwise.search.SearchService;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -48,12 +49,13 @@ class AssistantService {
     private final PendingActions pending;
     private final ChatMemoryRepository memoryRepository;
     private final Timer firstTokenTimer;
+    private final RecommendationService recommendations;
     private final String systemPrompt;
     private final String voicePrompt;
 
     AssistantService(RoutingChatModel chatModel, ChatMemoryRepository memoryRepository, SearchService search,
             CatalogService catalog, CartService carts, AuditLog audit, CheckoutService checkout, OrderService orders,
-            PendingActions pending, MeterRegistry meters,
+            PendingActions pending, MeterRegistry meters, RecommendationService recommendations,
             @Value("classpath:prompts/system.md") Resource systemPrompt,
             @Value("classpath:prompts/voice.md") Resource voicePrompt) throws IOException {
         ChatMemory memory = MessageWindowChatMemory.builder()
@@ -71,6 +73,7 @@ class AssistantService {
         this.orders = orders;
         this.pending = pending;
         this.memoryRepository = memoryRepository;
+        this.recommendations = recommendations;
         this.firstTokenTimer = Timer.builder("shopwise.assistant.first.token")
                 .description("Time from a customer message to the first token of the reply")
                 .register(meters);
@@ -84,7 +87,7 @@ class AssistantService {
     Flux<ServerSentEvent<Object>> reply(UUID conversationId, CartKey cartKey, @Nullable Long customerId, String text,
             boolean voice) {
         var ui = new UiEvents();
-        var tools = new ShopTools(search, catalog, carts, audit, cartKey, conversationId, ui);
+        var tools = new ShopTools(search, catalog, carts, audit, cartKey, conversationId, ui, recommendations);
         var orderTools = new OrderTools(customerId, cartKey, conversationId, ui, checkout, orders, pending, audit);
         var system = voice ? systemPrompt + "\n\n" + voicePrompt : systemPrompt;
 
