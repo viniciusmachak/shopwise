@@ -151,6 +151,8 @@ Locally, `deploy/docker-compose.yml` starts Postgres (pgvector image, on port 54
 
 In production, `deploy/docker-compose.prod.yml` runs on an Oracle Cloud Always Free ARM VM (4 cores, 24 GB). Caddy serves the built frontend and proxies `/api` to the backend on the same domain, with HTTPS from Let's Encrypt. Keeping one domain matters: the session and CSRF cookies are first-party, which they wouldn't be with the frontend on a separate host. A daily `pg_dump` is kept on the VM and can be copied to Oracle's free object storage. E-mail goes through the Brevo or Resend free tier. GitHub Actions builds the images, pushes them to GHCR and deploys over SSH. DuckDNS gives a free domain. `deploy/README.md` has the steps.
 
+Prometheus scrapes the backend's metrics (HTTP, JVM, and business metrics: orders, revenue, the assistant's time to first token, model requests and tokens per provider) and Grafana shows them on a provisioned dashboard. Neither is exposed to the internet; Grafana is reached through an SSH tunnel.
+
 Rough memory use on the VM: Postgres 2 GB, backend 1 GB, Ollama with a quantized 8B model around 7 GB, monitoring 1 GB.
 
 Things to keep in mind:
