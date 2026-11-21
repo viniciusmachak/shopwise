@@ -92,6 +92,11 @@ management:
         shopwise.assistant.first.token: true
 
 shopwise:
+  payment:
+    stripe:
+      # Leave empty for simulated payments. Test keys start with sk_test_ / whsec_.
+      secret-key: ${STRIPE_SECRET_KEY:}
+      webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   admin:
     # Comma-separated e-mails that get the admin role (backoffice).
     emails: ${SHOPWISE_ADMIN_EMAILS:}

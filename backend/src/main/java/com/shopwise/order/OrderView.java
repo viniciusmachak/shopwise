@@ -15,6 +15,7 @@ public record OrderView(
         @Nullable Instant shippedAt,
         @Nullable Instant deliveredAt,
         @Nullable String trackingNumber,
+        @Nullable String paymentUrl,
         List<OrderLine> items,
         Money subtotal,
         @Nullable String couponCode,

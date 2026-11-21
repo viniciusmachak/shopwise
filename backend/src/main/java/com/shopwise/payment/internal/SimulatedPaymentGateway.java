@@ -2,12 +2,12 @@ package com.shopwise.payment.internal;
 
 import java.util.UUID;
 
-import org.springframework.stereotype.Component;
+import com.shopwise.payment.PaymentRequest;
+import com.shopwise.payment.PaymentStart;
 
-import com.shopwise.catalog.Money;
-import com.shopwise.payment.PaymentResult;
-
-@Component
+/**
+ * Approves at once (or declines everything when configured to), without a redirect.
+ */
 class SimulatedPaymentGateway implements PaymentGateway {
 
     private final SimulatedPaymentProperties properties;
@@ -17,16 +17,25 @@ class SimulatedPaymentGateway implements PaymentGateway {
     }
 
     @Override
-    public PaymentResult charge(long orderId, Money amount) {
-        var reference = "sim_" + UUID.randomUUID();
-        if (properties.declineAll()) {
-            return new PaymentResult(false, reference, "The payment was declined.");
-        }
-        return new PaymentResult(true, reference, null);
+    public String name() {
+        return "simulated";
     }
 
     @Override
-    public void refund(String reference) {
+    public Started start(PaymentRequest request) {
+        var reference = "sim_" + UUID.randomUUID();
+        return new Started(properties.declineAll()
+                ? new PaymentStart.Declined("The payment was declined.")
+                : new PaymentStart.Paid(reference), reference);
+    }
+
+    @Override
+    public Status status(String reference) {
+        return new Status(true, false, reference);
+    }
+
+    @Override
+    public void refund(String providerPaymentId) {
         // Nothing to do for simulated payments.
     }
 }
