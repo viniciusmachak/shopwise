@@ -1,20 +1,20 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { api, type CategoryView } from '../api/client'
-import { useSession } from '../api/session'
 import { useChatToggle } from '../chat/chatToggle'
 import {
+  BoxIcon,
   CategoryArt,
+  ChatIcon,
   ChevronRight,
   GridIcon,
   MicIcon,
   TagIcon,
   TruckIcon,
-  BoxIcon,
-  ChatIcon,
 } from '../components/icons'
 import { FREE_SHIPPING_FROM, ProductCard } from '../components/ProductCard'
+import { Breadcrumbs, CardSkeletons, EmptyState, ErrorState } from '../components/Status'
 import { formatMoney, t } from '../i18n'
 
 const usd = (amount: number) => formatMoney({ amount, currency: 'USD' })
@@ -25,14 +25,43 @@ export function CatalogPage() {
   return q ? <SearchResults query={q} /> : <Home />
 }
 
+function AskButton({ secondary = false }: { secondary?: boolean }) {
+  const chat = useChatToggle()
+  return (
+    <button type="button" className={secondary ? 'button-secondary' : undefined} onClick={() => chat.setOpen(true)}>
+      <ChatIcon size={18} />
+      {t('home.ask')}
+    </button>
+  )
+}
+
 function SearchResults({ query }: { query: string }) {
   const results = useQuery({ queryKey: ['search', query], queryFn: () => api.search(query) })
   return (
     <section className="panel">
-      <h1 className="panel-title">{t('search.resultsFor', { query })}</h1>
-      {results.isError && <p role="alert">{t('error.generic')}</p>}
-      {results.data?.length === 0 && <p>{t('search.noResults')}</p>}
+      <Breadcrumbs items={[{ label: t('search.resultsFor', { query }) }]} />
+      <div className="panel-heading">
+        <h1 className="panel-title">{t('search.resultsFor', { query })}</h1>
+        {results.data && <span>{t('catalog.count', { count: results.data.length })}</span>}
+      </div>
+      {results.isError && <ErrorState onRetry={() => void results.refetch()} />}
+      {results.data?.length === 0 && (
+        <EmptyState
+          title={t('search.noResults')}
+          action={
+            <>
+              <AskButton />
+              <Link to="/shop" className="button button-secondary">
+                {t('home.browse')}
+              </Link>
+            </>
+          }
+        >
+          {t('search.noResultsHelp')}
+        </EmptyState>
+      )}
       <div className="grid">
+        {results.isPending && <CardSkeletons count={8} />}
         {results.data?.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
@@ -46,8 +75,9 @@ function Home() {
   return (
     <>
       <Hero />
+      <Benefits />
       <CategoryTiles categories={categories.data ?? []} />
-      <ShortcutCards />
+      {categories.isError && <ErrorState onRetry={() => void categories.refetch()} />}
       {categories.data?.map((c) => (
         <CategoryShelf key={c.slug} category={c} />
       ))}
@@ -59,32 +89,38 @@ function Hero() {
   const chat = useChatToggle()
   return (
     <section className="hero">
-      <div className="hero-copy">
-        <p className="hero-kicker">{t('home.kicker')}</p>
-        <h1>{t('home.title')}</h1>
-        <p>{t('home.subtitle')}</p>
-        <div className="hero-actions">
-          <button type="button" className="button button-light" onClick={() => chat.setOpen(true)}>
-            <MicIcon size={18} />
-            {t('home.ask')}
-          </button>
-          <Link to="/shop" className="button button-outline-light">
-            {t('home.browse')}
-          </Link>
-        </div>
-      </div>
-      <div className="hero-art" aria-hidden="true">
-        <div className="hero-bubble hero-bubble-user">{t('home.sampleQuestion')}</div>
-        <div className="hero-bubble hero-bubble-bot">{t('home.sampleAnswer')}</div>
-        <div className="hero-items">
-          {['running-shoes', 'jackets', 'backpacks'].map((c) => (
-            <span key={c} className="hero-item">
-              <CategoryArt category={c} size={56} />
-            </span>
-          ))}
-        </div>
+      <h1>{t('home.title')}</h1>
+      <p>{t('home.subtitle')}</p>
+      <div className="hero-actions">
+        <button type="button" className="button-light" onClick={() => chat.setOpen(true)}>
+          <MicIcon size={18} />
+          {t('home.ask')}
+        </button>
+        <Link to="/shop" className="button button-outline-light">
+          {t('home.browse')}
+        </Link>
       </div>
     </section>
+  )
+}
+
+/** Store rules people ask about before buying, stated up front. */
+function Benefits() {
+  return (
+    <ul className="benefits" aria-label={t('home.benefits')}>
+      <li>
+        <TruckIcon size={22} />
+        {t('home.benefit.shipping', { amount: usd(FREE_SHIPPING_FROM) })}
+      </li>
+      <li>
+        <ChatIcon size={22} />
+        {t('home.benefit.assistant')}
+      </li>
+      <li>
+        <BoxIcon size={22} />
+        {t('home.benefit.cancel')}
+      </li>
+    </ul>
   )
 }
 
@@ -118,81 +154,27 @@ function Tile({ to, label, icon }: { to: string; label: string; icon: ReactNode 
   )
 }
 
-function ShortcutCards() {
-  const chat = useChatToggle()
-  const session = useSession()
-  const signedIn = session.data?.authenticated
-  return (
-    <section className="shortcuts" aria-label={t('home.shortcuts')}>
-      <Shortcut
-        title={t('home.shipping.title')}
-        text={t('home.shipping.text', { amount: usd(FREE_SHIPPING_FROM) })}
-        icon={<TruckIcon size={34} />}
-        action={<Link to="/shop">{t('home.shipping.action')}</Link>}
-      />
-      <Shortcut
-        title={t('home.assistant.title')}
-        text={t('home.assistant.text')}
-        icon={<ChatIcon size={34} />}
-        action={
-          <button type="button" onClick={() => chat.setOpen(true)}>
-            {t('home.assistant.action')}
-          </button>
-        }
-      />
-      {signedIn ? (
-        <Shortcut
-          title={t('home.orders.title')}
-          text={t('home.orders.text')}
-          icon={<BoxIcon size={34} />}
-          action={<Link to="/orders">{t('home.orders.action')}</Link>}
-        />
-      ) : (
-        <Shortcut
-          title={t('home.signIn.title')}
-          text={t('home.signIn.text')}
-          icon={<BoxIcon size={34} />}
-          action={<Link to="/sign-in">{t('nav.signIn')}</Link>}
-        />
-      )}
-      <Shortcut
-        title={t('home.under', { amount: usd(FREE_SHIPPING_FROM) })}
-        text={t('home.budget.text')}
-        icon={<TagIcon size={34} />}
-        action={<Link to={`/shop?maxPrice=${FREE_SHIPPING_FROM}`}>{t('home.budget.action')}</Link>}
-      />
-    </section>
-  )
-}
-
-function Shortcut({ title, text, icon, action }: { title: string; text: string; icon: ReactNode; action: ReactNode }) {
-  return (
-    <article className="shortcut">
-      <h2>{title}</h2>
-      <span className="shortcut-icon">{icon}</span>
-      <p>{text}</p>
-      <div className="shortcut-action">{action}</div>
-    </article>
-  )
-}
-
 function CategoryShelf({ category }: { category: CategoryView }) {
   const products = useQuery({
     queryKey: ['products', { category: category.slug, page: 0 }],
     queryFn: () => api.products({ category: category.slug, page: 0 }),
   })
   const items = products.data?.content ?? []
-  if (items.length === 0) return null
+  if (products.isSuccess && items.length === 0) return null
   return (
-    <section className="panel shelf">
+    <section className="panel shelf" aria-labelledby={`shelf-${category.slug}`}>
       <div className="panel-heading">
-        <h2 className="panel-title">{category.name}</h2>
+        <h2 className="panel-title" id={`shelf-${category.slug}`}>
+          {category.name}
+        </h2>
         <Link to={`/shop?category=${category.slug}`} className="see-all">
-          {t('home.seeAll')}
+          {t('home.seeAll', { category: category.name })}
           <ChevronRight size={16} />
         </Link>
       </div>
+      {products.isError && <ErrorState onRetry={() => void products.refetch()} />}
       <div className="shelf-row">
+        {products.isPending && <CardSkeletons count={5} />}
         {items.slice(0, 6).map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
@@ -207,85 +189,148 @@ export function ShopPage() {
   const category = params.get('category') ?? undefined
   const maxPrice = params.get('maxPrice') ?? ''
   const inStock = params.get('inStock') === 'true'
-  const [page, setPage] = useState(0)
 
   const categories = useQuery({ queryKey: ['categories'], queryFn: api.categories })
-  const filters = { category, maxPrice: maxPrice ? Number(maxPrice) : undefined, inStock: inStock || undefined, page }
-  const products = useQuery({
-    queryKey: ['products', filters],
-    queryFn: () => api.products(filters),
+  const filters = { category, maxPrice: maxPrice ? Number(maxPrice) : undefined, inStock: inStock || undefined }
+  // "Load more" appends the next page under the products already shown.
+  const products = useInfiniteQuery({
+    queryKey: ['products', 'list', filters],
+    queryFn: ({ pageParam }) => api.products({ ...filters, page: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (last) =>
+      last.page && last.page.number + 1 < last.page.totalPages ? last.page.number + 1 : undefined,
     placeholderData: keepPreviousData,
   })
+  const items = products.data?.pages.flatMap((p) => p.content ?? []) ?? []
+  const total = products.data?.pages[0]?.page?.totalElements
 
   function update(name: string, value: string | undefined) {
     const next = new URLSearchParams(params)
     if (value) next.set(name, value)
     else next.delete(name)
     setParams(next)
-    setPage(0)
+  }
+
+  function clearAll() {
+    setParams(new URLSearchParams())
   }
 
   const current = categories.data?.find((c) => c.slug === category)
+  const active = [
+    current && { key: 'category', label: current.name },
+    maxPrice && { key: 'maxPrice', label: t('catalog.upTo', { amount: usd(Number(maxPrice)) }) },
+    inStock && { key: 'inStock', label: t('catalog.inStock') },
+  ].filter((f): f is { key: string; label: string } => Boolean(f))
+  const title = current?.name ?? t('home.allProducts')
 
   return (
-    <div className="catalog">
-      <aside className="filters panel" aria-label={t('catalog.filters')}>
-        <h2 className="filters-title">{t('catalog.filters')}</h2>
-        <div role="group" aria-label={t('admin.category')} className="chips">
-          <button type="button" aria-pressed={!category} onClick={() => update('category', undefined)}>
-            {t('catalog.all')}
-          </button>
-          {categories.data?.map((c) => (
-            <button
-              key={c.slug}
-              type="button"
-              aria-pressed={category === c.slug}
-              onClick={() => update('category', c.slug)}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
-        <label className="field">
-          {t('catalog.maxPrice')}
-          <input
-            type="number"
-            min={0}
-            inputMode="decimal"
-            value={maxPrice}
-            onChange={(e) => update('maxPrice', e.target.value || undefined)}
-          />
-        </label>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={inStock}
-            onChange={(e) => update('inStock', e.target.checked ? 'true' : undefined)}
-          />
-          {t('catalog.inStock')}
-        </label>
-      </aside>
+    <>
+      <Breadcrumbs
+        items={[{ label: t('home.allProducts'), to: '/shop' }, ...(current ? [{ label: current.name }] : [])]}
+      />
+      <div className="catalog">
+        <aside className="filters panel" aria-label={t('catalog.filters')}>
+          <h2 className="filters-title">{t('catalog.filters')}</h2>
+          <fieldset>
+            <legend>{t('admin.category')}</legend>
+            <div className="chips">
+              <button type="button" aria-pressed={!category} onClick={() => update('category', undefined)}>
+                {t('catalog.all')}
+              </button>
+              {categories.data?.map((c) => (
+                <button
+                  key={c.slug}
+                  type="button"
+                  aria-pressed={category === c.slug}
+                  onClick={() => update('category', c.slug)}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <label className="field">
+            {t('catalog.maxPrice')}
+            <input
+              type="number"
+              min={0}
+              step={1}
+              inputMode="decimal"
+              placeholder={t('catalog.maxPriceHint')}
+              value={maxPrice}
+              onChange={(e) => update('maxPrice', e.target.value || undefined)}
+            />
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={inStock}
+              onChange={(e) => update('inStock', e.target.checked ? 'true' : undefined)}
+            />
+            {t('catalog.inStock')}
+          </label>
+        </aside>
 
-      <section className="panel catalog-results">
-        <div className="panel-heading">
-          <h1 className="panel-title">{current?.name ?? t('home.allProducts')}</h1>
-          {products.data?.page && (
-            <span className="muted">{t('catalog.count', { count: products.data.page.totalElements })}</span>
+        <section className="panel catalog-results" aria-busy={products.isFetching}>
+          <div className="panel-heading">
+            <h1 className="panel-title">{title}</h1>
+            {total !== undefined && <span>{t('catalog.count', { count: total })}</span>}
+          </div>
+          {active.length > 0 && (
+            <ul className="active-filters" aria-label={t('catalog.activeFilters')}>
+              {active.map((f) => (
+                <li key={f.key}>
+                  <button
+                    type="button"
+                    className="filter-tag"
+                    aria-label={t('catalog.removeFilter', { filter: f.label })}
+                    onClick={() => update(f.key, undefined)}
+                  >
+                    {f.label} <span aria-hidden="true">×</span>
+                  </button>
+                </li>
+              ))}
+              <li>
+                <button type="button" className="link-button" onClick={clearAll}>
+                  {t('catalog.clearAll')}
+                </button>
+              </li>
+            </ul>
           )}
-        </div>
-        {products.isError && <p role="alert">{t('error.generic')}</p>}
-        {products.data?.content?.length === 0 && <p>{t('catalog.empty')}</p>}
-        <div className="grid">
-          {products.data?.content?.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-        {products.data?.page && products.data.page.number + 1 < products.data.page.totalPages && (
-          <button type="button" className="button button-soft load-more" onClick={() => setPage((p) => p + 1)}>
-            {t('catalog.loadMore')}
-          </button>
-        )}
-      </section>
-    </div>
+          {products.isError && <ErrorState onRetry={() => void products.refetch()} />}
+          {products.isSuccess && items.length === 0 && (
+            <EmptyState
+              title={t('catalog.empty')}
+              action={
+                <>
+                  <button type="button" onClick={clearAll}>
+                    {t('catalog.clearAll')}
+                  </button>
+                  <AskButton secondary />
+                </>
+              }
+            >
+              {t('catalog.emptyHelp')}
+            </EmptyState>
+          )}
+          <div className="grid">
+            {products.isPending && <CardSkeletons count={8} />}
+            {items.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+          {products.hasNextPage && (
+            <button
+              type="button"
+              className="button-secondary load-more"
+              disabled={products.isFetchingNextPage}
+              onClick={() => void products.fetchNextPage()}
+            >
+              {products.isFetchingNextPage ? t('status.loading') : t('catalog.loadMore')}
+            </button>
+          )}
+        </section>
+      </div>
+    </>
   )
 }

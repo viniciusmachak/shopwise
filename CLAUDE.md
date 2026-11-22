@@ -77,7 +77,8 @@ These protect users. Don't relax them without the maintainer's approval.
 - The cart shown in the chat and the cart on the page come from the same query, so they never disagree.
 - Voice goes through a single hook (`useVoice`) wrapping the Web Speech API. If the browser lacks support, the mic button is not rendered.
 - All user-facing strings go through the i18n layer, even though English is the only language for now.
-- Visual design: a marketplace layout in blue and white. Colours, radii and shadows are tokens on `:root` in `styles.css`; use them instead of new hex values. Products without a photo show their category's line drawing (`CategoryArt`).
+- Visual design: a simple marketplace layout. Only blue, white and black (plus tints of the blue), one font weight, no gradients or shadows; the tokens are on `:root` in `styles.css`. Products without a photo show their category's line drawing (`CategoryArt`).
+- Follow Nielsen's usability heuristics. In practice: every list has loading, error (with retry) and empty (with a next step) states; filters live in the URL and can be removed one by one; actions confirm what happened and offer a way back (undo, view cart); breadcrumbs show where you are.
 
 ## Testing
 
