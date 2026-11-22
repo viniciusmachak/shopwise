@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { useParams } from 'react-router'
 import { useAddToCart } from '../api/cart'
 import { api } from '../api/client'
-import { ProductCard } from '../components/ProductCard'
+import { CategoryArt } from '../components/icons'
+import { FREE_SHIPPING_FROM, ProductCard } from '../components/ProductCard'
 import { formatMoney, t } from '../i18n'
 
 export function ProductPage() {
@@ -27,53 +28,65 @@ export function ProductPage() {
 
   return (
     <article className="product-page">
-      <h1>{p.name}</h1>
-      <p className="muted">
-        {p.brand} · {p.category}
-      </p>
-      <p className="price">{formatMoney(p.price)}</p>
-      <p>{p.description}</p>
+      <div className="panel product-main">
+        <div className="product-gallery">
+          {p.imageUrl ? <img src={p.imageUrl} alt="" /> : <CategoryArt category={p.category} size={180} />}
+        </div>
+        <div className="product-info">
+          <p className="muted">
+            {p.brand} · {p.category}
+          </p>
+          <h1>{p.name}</h1>
+          <p className="price">{formatMoney(p.price)}</p>
+          {p.price.amount >= FREE_SHIPPING_FROM && <p className="shipping-note">{t('product.freeShipping')}</p>}
+          <p>{p.description}</p>
 
-      {!single && (
-        <label>
-          {t('product.size')}
-          <select value={variantId ?? ''} onChange={(e) => setVariantId(Number(e.target.value) || undefined)}>
-            <option value="">{t('product.chooseSize')}</option>
-            {variants.map((v) => (
-              <option key={v.id} value={v.id} disabled={v.stock === 0}>
-                {v.size}
-                {v.stock === 0 ? ` (${t('product.outOfStock')})` : ''}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
+          {!single && (
+            <label>
+              {t('product.size')}
+              <select value={variantId ?? ''} onChange={(e) => setVariantId(Number(e.target.value) || undefined)}>
+                <option value="">{t('product.chooseSize')}</option>
+                {variants.map((v) => (
+                  <option key={v.id} value={v.id} disabled={v.stock === 0}>
+                    {v.size}
+                    {v.stock === 0 ? ` (${t('product.outOfStock')})` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
-      <button
-        type="button"
-        disabled={!selected || addToCart.isPending}
-        onClick={() => selected && addToCart.mutate({ variantId: selected, quantity: 1 })}
-      >
-        {t('product.addToCart')}
-      </button>
-      <p aria-live="polite">
-        {addToCart.isSuccess && t('product.added')}
-        {addToCart.isError && <span role="alert">{addToCart.error.message}</span>}
-      </p>
+          <button
+            type="button"
+            disabled={!selected || addToCart.isPending}
+            onClick={() => selected && addToCart.mutate({ variantId: selected, quantity: 1 })}
+          >
+            {t('product.addToCart')}
+          </button>
+          <p aria-live="polite">
+            {addToCart.isSuccess && t('product.added')}
+            {addToCart.isError && <span role="alert">{addToCart.error.message}</span>}
+          </p>
+        </div>
+      </div>
 
       {recommendations.data && recommendations.data.goesWith.length > 0 && (
-        <section className="recommendations">
+        <section className="panel recommendations">
           <h2>{t('product.goesWith')}</h2>
-          <div className="grid">
-            {recommendations.data.goesWith.map((r) => <ProductCard key={r.id} product={r} />)}
+          <div className="shelf-row">
+            {recommendations.data.goesWith.map((r) => (
+              <ProductCard key={r.id} product={r} />
+            ))}
           </div>
         </section>
       )}
       {recommendations.data && recommendations.data.similar.length > 0 && (
-        <section className="recommendations">
+        <section className="panel recommendations">
           <h2>{t('product.similar')}</h2>
-          <div className="grid">
-            {recommendations.data.similar.map((r) => <ProductCard key={r.id} product={r} />)}
+          <div className="shelf-row">
+            {recommendations.data.similar.map((r) => (
+              <ProductCard key={r.id} product={r} />
+            ))}
           </div>
         </section>
       )}
