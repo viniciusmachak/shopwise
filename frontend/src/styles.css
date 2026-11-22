@@ -3,10 +3,10 @@
  * One font weight everywhere; hierarchy comes from size and space. No gradients, no shadows.
  */
 :root {
-  --blue: #1d5be0;
-  --blue-dark: #1748b4;
-  --blue-tint: #e9f0fd;
-  --blue-line: #c9d8f7;
+  --blue: #1976d2;
+  --blue-dark: #1565c0;
+  --blue-tint: #e8f2fc;
+  --blue-line: #bcd8f5;
   --white: #ffffff;
   --black: #111111;
   --radius: 8px;
@@ -336,56 +336,105 @@ legend {
   z-index: 10;
   color: var(--white);
   background: var(--blue);
+  /* The header adapts to its own width, which shrinks when the chat panel is open. */
+  container: header / inline-size;
 }
 
-.header-bar,
-.header-nav {
+.header-top,
+.header-bottom {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem 1.25rem;
+  gap: 0.5rem 1.5rem;
   max-width: var(--content);
   margin: 0 auto;
-  padding: 0.75rem 1rem;
+  padding: 0 1rem;
 }
 
-.header-nav {
-  padding-top: 0;
-  padding-bottom: 0.6rem;
+.header-top {
+  padding-top: 0.6rem;
+  padding-bottom: 0.5rem;
 }
 
-.logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.35rem;
+.header-bottom {
+  min-height: 2.75rem;
+  padding-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.header a {
   color: var(--white);
   text-decoration: none;
 }
 
-.logo:hover {
+.header a:hover {
   color: var(--white);
+  text-decoration: underline;
+}
+
+.logo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 10.5rem;
+  font-size: 1.35rem;
+}
+
+.header .logo:hover {
+  text-decoration: none;
 }
 
 .logo-mark {
   display: grid;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
-  font-size: 1.1rem;
+  width: 2.1rem;
+  height: 2.1rem;
+  font-size: 1.15rem;
   color: var(--blue);
   background: var(--white);
-  border-radius: var(--radius);
-}
-
-.search {
-  display: flex;
-  flex: 1 1 18rem;
-  max-width: 40rem;
+  border-radius: 50%;
 }
 
 .search {
   position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  max-width: 38rem;
+  height: 2.6rem;
+  background: var(--white);
+  border-radius: 2px;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 2px 0 0 2px;
+}
+
+.search input:focus {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: -2px;
+}
+
+.search button {
+  width: 3rem;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  color: var(--blue);
+  background: var(--white);
+  border: 0;
+  border-left: 1px solid var(--blue-line);
+  border-radius: 0 2px 2px 0;
+}
+
+.search button:hover {
+  color: var(--blue-dark);
+  background: var(--blue-tint);
 }
 
 .kbd-hint {
@@ -402,115 +451,157 @@ legend {
   pointer-events: none;
 }
 
-.search input {
-  flex: 1;
-  min-width: 0;
-  border-color: var(--white);
-  border-radius: var(--radius) 0 0 var(--radius);
-}
-
-.search input:focus {
-  outline: 3px solid var(--white);
-  outline-offset: 0;
-}
-
-.search button {
-  color: var(--blue);
-  background: var(--white);
-  border-color: var(--white);
-  border-left-color: var(--blue-line);
-  border-radius: 0 var(--radius) var(--radius) 0;
-}
-
-.search button:hover {
-  color: var(--blue);
-  background: var(--blue-tint);
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+.assistant-promo {
+  flex: none;
+  gap: 0.6rem;
+  min-height: 2.6rem;
   margin-left: auto;
-}
-
-.header-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-height: 2.75rem;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.95rem;
+  padding: 0.25rem 0.9rem;
   color: var(--white);
-  text-decoration: none;
+  text-align: left;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid var(--white);
   border-radius: var(--radius);
 }
 
-.header-link:hover {
-  color: var(--white);
-  background: transparent;
+.assistant-promo:hover {
+  color: var(--blue);
+  background: var(--white);
   border-color: var(--white);
+}
+
+.assistant-promo span {
+  display: grid;
+  line-height: 1.2;
+}
+
+.assistant-promo small {
+  font-size: 0.75rem;
+}
+
+.header-shipping {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 10.5rem;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.header-shipping span {
+  display: grid;
+}
+
+.header-shipping small {
+  font-size: 0.75rem;
+}
+
+.header-links,
+.header-account {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  white-space: nowrap;
+}
+
+.header-links {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-links a[aria-current='page'] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.header-account {
+  margin-left: auto;
+}
+
+.header-account .link-button {
+  font-size: inherit;
+  color: var(--white);
+  text-decoration: none;
+}
+
+.header-account .link-button:hover {
+  color: var(--white);
+  text-decoration: underline;
+}
+
+.category-menu {
+  position: relative;
+}
+
+.category-menu-button {
+  gap: 0.2rem;
+  min-height: 2rem;
+  padding: 0;
+  font-size: inherit;
+  color: var(--white);
+  background: none;
+  border: 0;
+}
+
+.category-menu-button:hover {
+  color: var(--white);
+  text-decoration: underline;
+  background: none;
+}
+
+.category-menu-button[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.category-menu-list {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 15;
+  min-width: 13rem;
+  margin: 0;
+  padding: 0.4rem 0;
+  list-style: none;
+  background: var(--white);
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius);
+}
+
+.header .category-menu-list a {
+  display: block;
+  padding: 0.55rem 1rem;
+  color: var(--black);
+}
+
+.header .category-menu-list a:hover,
+.header .category-menu-list a:focus-visible {
+  color: var(--white);
+  text-decoration: none;
+  background: var(--blue);
 }
 
 .cart-link {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem;
 }
 
 .cart-count {
-  display: inline-grid;
+  position: absolute;
+  top: -0.2rem;
+  right: -0.45rem;
+  display: grid;
   place-items: center;
-  min-width: 1.4rem;
-  height: 1.4rem;
-  padding: 0 0.35rem;
-  font-size: 0.8rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.25rem;
+  font-size: 0.7rem;
   color: var(--blue);
   background: var(--white);
   border-radius: 999px;
-}
-
-.category-nav {
-  display: flex;
-  flex: 1;
-  gap: 0.25rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.category-nav a {
-  padding: 0.3rem 0.65rem;
-  font-size: 0.95rem;
-  color: var(--white);
-  text-decoration: none;
-  white-space: nowrap;
-  border: 1px solid transparent;
-  border-radius: 999px;
-}
-
-.category-nav a:hover {
-  color: var(--white);
-  border-color: var(--white);
-}
-
-.category-nav a[aria-current='page'] {
-  color: var(--blue);
-  background: var(--white);
-}
-
-.assistant-toggle {
-  min-height: 2.25rem;
-  padding: 0.3rem 0.9rem;
-  color: var(--blue);
-  background: var(--white);
-  border-color: var(--white);
-  border-radius: 999px;
-}
-
-.assistant-toggle:hover {
-  color: var(--blue);
-  background: var(--blue-tint);
-  border-color: var(--blue-tint);
 }
 
 .main {
@@ -1322,10 +1413,20 @@ legend {
   }
 }
 
-@media (max-width: 600px) {
-  .header-link > span:not(.cart-count),
-  .kbd-hint {
+@container header (max-width: 1000px) {
+  .header-shipping,
+  .assistant-promo small {
     display: none;
+  }
+}
+
+@container header (max-width: 760px) {
+  .header-top {
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    min-width: 0;
   }
 
   .search {
@@ -1333,6 +1434,56 @@ legend {
     order: 3;
     max-width: none;
   }
+
+  .kbd-hint {
+    display: none;
+  }
+
+  .header-bottom {
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .header-links,
+  .header-account {
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+  }
+
+  .header-account {
+    margin-left: 0;
+  }
+}
+
+/* Phones: the categories menu stays, the quick links go (they are on the home page too). */
+@container header (max-width: 520px) {
+  .header-links > a {
+    display: none;
+  }
+
+  .header-bottom,
+  .header-links,
+  .header-account {
+    flex-wrap: nowrap;
+  }
+
+  .header-links {
+    flex: none;
+  }
+
+  .header-bottom {
+    gap: 0.75rem;
+  }
+
+  .header-account {
+    gap: 0.75rem;
+    margin-left: auto;
+    padding-right: 0.4rem;
+  }
+}
+
+@media (max-width: 600px) {
 
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

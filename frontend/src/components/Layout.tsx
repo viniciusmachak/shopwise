@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
+import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { useCart } from '../api/cart'
-import { api } from '../api/client'
+import { api, type CategoryView } from '../api/client'
 import { useLogout, useSession } from '../api/session'
 import { ChatPanel } from '../chat/ChatPanel'
 import { ChatToggleContext } from '../chat/chatToggle'
-import { t } from '../i18n'
-import { CartIcon, ChatIcon, SearchIcon, UserIcon } from './icons'
+import { formatMoney, t } from '../i18n'
+import { CartIcon, ChatIcon, ChevronDown, MicIcon, SearchIcon, TruckIcon } from './icons'
+import { FREE_SHIPPING_FROM } from './ProductCard'
 
 export function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
@@ -21,6 +22,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const [chatOpen, setChatOpen] = useState(false)
   const chat = useMemo(() => ({ open: chatOpen, setOpen: setChatOpen }), [chatOpen])
   const itemCount = cart.data?.itemCount ?? 0
+  const customer = session.data?.authenticated ? session.data.customer : undefined
 
   // The search box always shows the search you're looking at.
   const urlQuery = location.pathname === '/' ? (params.get('q') ?? '') : ''
@@ -50,9 +52,6 @@ export function Layout({ children }: { children: ReactNode }) {
     navigate(q ? `/?q=${encodeURIComponent(q)}` : '/')
   }
 
-  const onShop = location.pathname === '/shop'
-  const currentCategory = onShop ? params.get('category') : null
-
   return (
     <ChatToggleContext value={chat}>
       <div className={chatOpen ? 'app chat-open' : 'app'}>
@@ -60,12 +59,12 @@ export function Layout({ children }: { children: ReactNode }) {
           {t('nav.skip')}
         </a>
         <header className="header">
-          <div className="header-bar">
+          <div className="header-top">
             <Link to="/" className="logo" aria-label={t('nav.home')}>
               <span className="logo-mark" aria-hidden="true">
                 S
               </span>
-              {t('app.name')}
+              <span className="logo-name">{t('app.name')}</span>
             </Link>
             <form role="search" onSubmit={onSearch} className="search">
               <input
@@ -86,38 +85,61 @@ export function Layout({ children }: { children: ReactNode }) {
                 <SearchIcon />
               </button>
             </form>
-            <nav className="header-actions" aria-label={t('nav.account')}>
-              {session.data?.authenticated ? (
+            <button
+              type="button"
+              className="assistant-promo"
+              onClick={() => setChatOpen((open) => !open)}
+              aria-expanded={chatOpen}
+            >
+              {chatOpen ? <ChatIcon size={20} /> : <MicIcon size={20} />}
+              <span>
+                {chatOpen ? t('chat.close') : t('chat.open')}
+                <small>{t('nav.assistantHint')}</small>
+              </span>
+            </button>
+          </div>
+
+          <div className="header-bottom">
+            <p className="header-shipping">
+              <TruckIcon size={20} />
+              <span>
+                <small>{t('nav.shippingLabel')}</small>
+                {t('nav.shippingValue', { amount: formatMoney({ amount: FREE_SHIPPING_FROM, currency: 'USD' }) })}
+              </span>
+            </p>
+            <nav className="header-links" aria-label={t('nav.store')}>
+              <CategoryMenu categories={categories.data ?? []} />
+              <NavLink to="/shop" end>
+                {t('home.allProducts')}
+              </NavLink>
+              <Link to={`/shop?maxPrice=${FREE_SHIPPING_FROM}`}>
+                {t('home.under', { amount: formatMoney({ amount: FREE_SHIPPING_FROM, currency: 'USD' }) })}
+              </Link>
+              <Link to="/shop?inStock=true">{t('nav.inStock')}</Link>
+            </nav>
+            <nav className="header-account" aria-label={t('nav.account')}>
+              {customer ? (
                 <>
-                  <Link to="/account" className="header-link">
-                    <UserIcon />
-                    <span>{t('nav.account')}</span>
-                  </Link>
-                  <Link to="/orders" className="header-link">
-                    {t('nav.orders')}
-                  </Link>
-                  {session.data.customer?.admin && (
-                    <Link to="/admin/products" className="header-link">
-                      {t('nav.admin')}
-                    </Link>
-                  )}
+                  <Link to="/account">{t('nav.greeting', { name: customer.name.split(' ')[0] || customer.name })}</Link>
+                  <Link to="/orders">{t('nav.orders')}</Link>
+                  {customer.admin && <Link to="/admin/products">{t('nav.admin')}</Link>}
                   <button
                     type="button"
-                    className="header-link"
+                    className="link-button"
                     onClick={() => logout.mutate(undefined, { onSuccess: () => navigate('/') })}
                   >
                     {t('nav.signOut')}
                   </button>
                 </>
               ) : (
-                <Link to="/sign-in" className="header-link">
-                  <UserIcon />
-                  <span>{t('nav.signIn')}</span>
-                </Link>
+                <>
+                  <Link to="/sign-up">{t('nav.signUp')}</Link>
+                  <Link to="/sign-in">{t('nav.signIn')}</Link>
+                  <Link to="/orders">{t('nav.orders')}</Link>
+                </>
               )}
-              <Link to="/cart" className="header-link cart-link" aria-label={t('nav.cart', { count: itemCount })}>
+              <Link to="/cart" className="cart-link" aria-label={t('nav.cart', { count: itemCount })}>
                 <CartIcon size={24} />
-                <span className="cart-label">{t('nav.cartLabel')}</span>
                 {itemCount > 0 && (
                   <span className="cart-count" aria-hidden="true">
                     {itemCount}
@@ -125,31 +147,6 @@ export function Layout({ children }: { children: ReactNode }) {
                 )}
               </Link>
             </nav>
-          </div>
-          <div className="header-nav">
-            <nav aria-label={t('nav.categories')} className="category-nav">
-              <Link to="/shop" aria-current={onShop && !currentCategory ? 'page' : undefined}>
-                {t('catalog.all')}
-              </Link>
-              {categories.data?.map((c) => (
-                <Link
-                  key={c.slug}
-                  to={`/shop?category=${c.slug}`}
-                  aria-current={currentCategory === c.slug ? 'page' : undefined}
-                >
-                  {c.name}
-                </Link>
-              ))}
-            </nav>
-            <button
-              type="button"
-              className="assistant-toggle"
-              onClick={() => setChatOpen((open) => !open)}
-              aria-expanded={chatOpen}
-            >
-              <ChatIcon size={18} />
-              {chatOpen ? t('chat.close') : t('chat.open')}
-            </button>
           </div>
         </header>
         <main className="main" id="content">
@@ -162,5 +159,63 @@ export function Layout({ children }: { children: ReactNode }) {
         {chatOpen && <ChatPanel />}
       </div>
     </ChatToggleContext>
+  )
+}
+
+/** "Categories" opens a list of every category; it closes on a pick, a click outside or Escape. */
+function CategoryMenu({ categories }: { categories: CategoryView[] }) {
+  const [open, setOpen] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+  const button = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onPointer(event: PointerEvent) {
+      if (!root.current?.contains(event.target as Node)) setOpen(false)
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false)
+        button.current?.focus()
+      }
+    }
+    document.addEventListener('pointerdown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div className="category-menu" ref={root}>
+      <button
+        ref={button}
+        type="button"
+        className="category-menu-button"
+        aria-expanded={open}
+        aria-controls="category-menu-list"
+        onClick={() => setOpen((o) => !o)}
+      >
+        {t('nav.categories')}
+        <ChevronDown size={16} />
+      </button>
+      {open && (
+        <ul id="category-menu-list" className="category-menu-list">
+          {categories.map((c) => (
+            <li key={c.slug}>
+              <Link to={`/shop?category=${c.slug}`} onClick={() => setOpen(false)}>
+                {c.name}
+              </Link>
+            </li>
+          ))}
+          <li>
+            <Link to="/shop" onClick={() => setOpen(false)}>
+              {t('home.allProducts')}
+            </Link>
+          </li>
+        </ul>
+      )}
+    </div>
   )
 }

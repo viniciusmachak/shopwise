@@ -89,6 +89,12 @@ export const GridIcon = (p: IconProps) => (
   </Svg>
 )
 
+export const ChevronDown = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="m6 9 6 6 6-6" />
+  </Svg>
+)
+
 export const ChevronRight = (p: IconProps) => (
   <Svg {...p}>
     <path d="m9 6 6 6-6 6" />
