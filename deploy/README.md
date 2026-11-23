@@ -1,15 +1,15 @@
 # Deploying Shopwise
 
-Production runs on one VM (planned: Oracle Cloud Always Free, ARM, 4 cores / 24 GB) with Docker Compose. Caddy serves the frontend and proxies the API on the same domain, with an HTTPS certificate from Let's Encrypt.
+Production runs on one VM (planned: Oracle Cloud Always Free, ARM, 2 cores / 12 GB) with Docker Compose. Caddy serves the frontend and proxies the API on the same domain, with an HTTPS certificate from Let's Encrypt.
 
 ## Services
 
 | Service | What it does |
 |---|---|
 | `web` | Caddy: static frontend, `/api` proxy, HTTPS |
-| `backend` | Spring Boot app (`prod` profile, no demo data) |
+| `backend` | Spring Boot app (`prod` profile; demo data only if `SHOPWISE_FLYWAY_LOCATIONS` asks for it) |
 | `postgres` | PostgreSQL 17 with pgvector |
-| `ollama` | Embeddings and the local chat model; `ollama-models` pulls them once |
+| `ollama` | Embeddings, and the local chat model if the fallback is on; `ollama-models` pulls them once |
 | `backup` | Daily `pg_dump` into the `backups` volume, keeping 7 days |
 | `backup-offsite` | Optional (`--profile offsite`): copies backups to S3-compatible storage |
 | `prometheus` | Scrapes the backend's `/actuator/prometheus` every 15 s, keeps 30 days |
@@ -36,7 +36,7 @@ Production runs on one VM (planned: Oracle Cloud Always Free, ARM, 4 cores / 24 
 6. Sign up in the store with an e-mail listed in `SHOPWISE_ADMIN_EMAILS` to get the backoffice.
 7. For card payments, set `STRIPE_SECRET_KEY` and create a webhook endpoint in the Stripe dashboard pointing to `https://<domain>/api/payments/stripe/webhook` with the events `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed`. Put its signing secret in `STRIPE_WEBHOOK_SECRET`. Use test keys until you're ready to take real payments.
 
-The first start pulls the Ollama models (about 5 GB), so the assistant needs a few minutes before local mode answers.
+The first start pulls the embedding model (about 300 MB), plus the local chat model (about 5 GB) if `SHOPWISE_AI_FALLBACK_TO_LOCAL=true` or the mode is `local`.
 
 ## Releasing and deploying
 
