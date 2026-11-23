@@ -10,7 +10,7 @@ import { AdminProductPage } from './pages/admin/AdminProductPage'
 import { AdminProductsPage } from './pages/admin/AdminProductsPage'
 import { AccountPage } from './pages/AccountPage'
 import { CartPage } from './pages/CartPage'
-import { CatalogPage } from './pages/CatalogPage'
+import { CatalogPage, ShopPage } from './pages/CatalogPage'
 import { CheckoutPage } from './pages/CheckoutPage'
 import { OrderPage, OrdersPage } from './pages/OrdersPage'
 import { ForgotPasswordPage, ResetPasswordPage } from './pages/PasswordResetPages'
@@ -23,6 +23,7 @@ export function App() {
     <Layout>
       <Routes>
         <Route path="/" element={<CatalogPage />} />
+        <Route path="/shop" element={<ShopPage />} />
         <Route path="/products/:id" element={<ProductPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/sign-in" element={<SignInPage />} />

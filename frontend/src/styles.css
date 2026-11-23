@@ -1,176 +1,75 @@
-/* Structural styles only. The visual design will be specified separately. */
+/*
+ * Shopwise storefront. Three colours only: blue, white and black (plus tints of the blue).
+ * One font weight everywhere; hierarchy comes from size and space. No gradients, no shadows.
+ */
+:root {
+  --blue: #1976d2;
+  --blue-dark: #1565c0;
+  --blue-tint: #e8f2fc;
+  --blue-line: #bcd8f5;
+  --white: #ffffff;
+  --black: #111111;
+  --radius: 8px;
+  --content: 76rem;
+  --chat-width: 24rem;
+  color-scheme: light;
+}
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+  font-weight: 400;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
+  /* Figtree is a free stand-in for Proxima Nova, bundled with the app (no font CDN). */
+  font-family: 'Proxima Nova', 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 1rem;
   line-height: 1.5;
+  color: var(--black);
+  background: var(--blue-tint);
 }
 
-.app {
-  min-height: 100vh;
+h1,
+h2,
+h3 {
+  margin: 0 0 1rem;
+  line-height: 1.25;
+  text-wrap: balance;
 }
 
-.header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #ddd;
+h1 {
+  font-size: 1.75rem;
 }
 
-.search {
-  display: flex;
-  flex: 1 1 16rem;
-  gap: 0.5rem;
+h2 {
+  font-size: 1.3rem;
 }
 
-.search input {
-  flex: 1;
-  min-width: 0;
-}
-
-.main {
-  padding: 1rem;
-}
-
-.filters,
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-  gap: 1rem;
-}
-
-.product-card {
-  border: 1px solid #ddd;
-  padding: 0.75rem;
-}
-
-.product-card h3 {
-  margin: 0;
+h3 {
   font-size: 1rem;
 }
 
-.muted {
-  color: #666;
+a {
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.badge {
-  margin-left: 0.5rem;
-  font-size: 0.8rem;
+a:hover {
+  color: var(--blue-dark);
 }
 
-.cart-lines {
-  list-style: none;
-  padding: 0;
+img {
+  display: block;
+  max-width: 100%;
 }
 
-.cart-lines li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
-}
-
-.cart-lines li > div {
-  flex: 1 1 12rem;
-}
-
-.totals {
-  display: grid;
-  grid-template-columns: auto auto;
-  justify-content: start;
-  gap: 0.25rem 1rem;
-}
-
-.totals dd {
-  margin: 0;
-}
-
-.chat {
-  position: fixed;
-  inset: auto 0 0 0;
-  height: 70vh;
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border-top: 1px solid #ddd;
-}
-
-@media (min-width: 768px) {
-  .chat {
-    inset: 0 0 0 auto;
-    width: 24rem;
-    height: auto;
-    border-top: 0;
-    border-left: 1px solid #ddd;
-  }
-
-  .chat-open .main,
-  .chat-open .header {
-    margin-right: 24rem;
-  }
-}
-
-.chat-header,
-.chat-input {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  padding: 0.75rem;
-}
-
-.chat-header h2 {
-  flex: 1;
-  margin: 0;
-  font-size: 1rem;
-}
-
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  list-style: none;
-  margin: 0;
-  padding: 0.75rem;
-}
-
-.chat-messages li {
-  margin-bottom: 0.75rem;
-}
-
-.chat-messages li.user {
-  text-align: right;
-}
-
-.chat-cards {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.chat-status {
-  margin: 0;
-  padding: 0 0.75rem;
-  font-style: italic;
-}
-
-.chat-input input {
-  flex: 1;
-  min-width: 0;
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
 }
 
 .visually-hidden {
@@ -182,55 +81,1423 @@ body {
   white-space: nowrap;
 }
 
-:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+.skip-link {
+  position: absolute;
+  top: -3rem;
+  left: 1rem;
+  z-index: 30;
+  padding: 0.5rem 1rem;
+  color: var(--blue);
+  background: var(--white);
+  border: 2px solid var(--blue);
+  border-radius: var(--radius);
 }
 
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 1rem;
+.skip-link:focus {
+  top: 0.5rem;
 }
 
-.admin-table th,
-.admin-table td {
-  text-align: left;
-  padding: 0.4rem 0.5rem;
-  border-bottom: 1px solid #eee;
+/* ---------- Controls: one primary style, one secondary style ---------- */
+
+button,
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1.15rem;
+  font: inherit;
+  color: var(--white);
+  text-decoration: none;
+  background: var(--blue);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  cursor: pointer;
 }
 
-.inline-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: end;
+button:hover,
+.button:hover {
+  color: var(--white);
+  background: var(--blue-dark);
+  border-color: var(--blue-dark);
 }
 
-.admin-nav {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
+button:disabled,
+button:disabled:hover {
+  color: var(--blue);
+  background: var(--blue-tint);
+  border-color: var(--blue-line);
+  cursor: not-allowed;
 }
 
-.conversation-list {
-  list-style: none;
+.button-secondary,
+.chips button,
+.chat-header button,
+.actions button + button,
+.confirm-box button + button {
+  color: var(--blue);
+  background: var(--white);
+  border-color: var(--blue);
+}
+
+.button-secondary:hover,
+.chips button:hover,
+.actions button + button:hover,
+.confirm-box button + button:hover {
+  color: var(--blue);
+  background: var(--blue-tint);
+}
+
+.chips button[aria-pressed='true'] {
+  color: var(--white);
+  background: var(--blue);
+}
+
+.button-light {
+  color: var(--blue);
+  background: var(--white);
+  border-color: var(--white);
+}
+
+.button-light:hover {
+  color: var(--blue);
+  background: var(--blue-tint);
+  border-color: var(--blue-tint);
+}
+
+.button-outline-light {
+  color: var(--white);
+  background: transparent;
+  border-color: var(--white);
+}
+
+.button-outline-light:hover {
+  color: var(--blue);
+  background: var(--white);
+  border-color: var(--white);
+}
+
+.link-button {
+  min-height: auto;
+  padding: 0;
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: none;
+  border: 0;
+}
+
+.link-button:hover {
+  color: var(--blue-dark);
+  background: none;
+}
+
+input,
+select,
+textarea {
+  min-height: 2.75rem;
+  padding: 0.45rem 0.7rem;
+  font: inherit;
+  color: var(--black);
+  background: var(--white);
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius);
+}
+
+input::placeholder {
+  color: var(--black);
+  opacity: 0.55;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 0;
+  border-color: var(--blue);
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  width: 1.15rem;
+  height: 1.15rem;
+  min-height: auto;
+  accent-color: var(--blue);
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  margin-bottom: 0.4rem;
   padding: 0;
 }
 
-.conversation-list button {
+.badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.8rem;
+  color: var(--blue);
+  background: var(--white);
+  border: 1px solid var(--blue);
+  border-radius: 999px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Messages: success, errors and undo all use the same box, so they are easy to spot. */
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  color: var(--black);
+  background: var(--blue-tint);
+  border: 1px solid var(--blue-line);
+  border-left: 4px solid var(--blue);
+  border-radius: var(--radius);
+}
+
+.notice p {
+  margin: 0;
+}
+
+[role='alert'] {
+  color: var(--black);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 2rem 0;
+}
+
+.spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid var(--blue-line);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+.empty p {
+  max-width: 32rem;
+  margin: 0;
+}
+
+.empty-title {
+  font-size: 1.2rem;
+}
+
+.empty-action {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+/* ---------- Layout ---------- */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  color: var(--white);
+  background: var(--blue);
+  /* The header adapts to its own width, which shrinks when the chat panel is open. */
+  container: header / inline-size;
+}
+
+.header-top,
+.header-bottom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  max-width: var(--content);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.header-top {
+  padding-top: 0.6rem;
+  padding-bottom: 0.5rem;
+}
+
+.header-bottom {
+  min-height: 2.75rem;
+  padding-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.header a {
+  color: var(--white);
+  text-decoration: none;
+}
+
+.header a:hover {
+  color: var(--white);
+  text-decoration: underline;
+}
+
+.logo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 10.5rem;
+  font-size: 1.35rem;
+}
+
+.header .logo:hover {
+  text-decoration: none;
+}
+
+.logo-mark {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  font-size: 1.15rem;
+  color: var(--blue);
+  background: var(--white);
+  border-radius: 50%;
+}
+
+.search {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  max-width: 38rem;
+  height: 2.6rem;
+  background: var(--white);
+  border-radius: 2px;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 2px 0 0 2px;
+}
+
+.search input:focus {
+  outline: 2px solid var(--blue-dark);
+  outline-offset: -2px;
+}
+
+.search button {
+  width: 3rem;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  color: var(--blue);
+  background: var(--white);
+  border: 0;
+  border-left: 1px solid var(--blue-line);
+  border-radius: 0 2px 2px 0;
+}
+
+.search button:hover {
+  color: var(--blue-dark);
+  background: var(--blue-tint);
+}
+
+.kbd-hint {
+  position: absolute;
+  top: 50%;
+  right: 3.6rem;
+  padding: 0 0.45rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--blue);
+  border: 1px solid var(--blue-line);
+  border-radius: 4px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.assistant-promo {
+  flex: none;
+  gap: 0.6rem;
+  min-height: 2.6rem;
+  margin-left: auto;
+  padding: 0.25rem 0.9rem;
+  color: var(--white);
   text-align: left;
+  background: transparent;
+  border: 1px solid var(--white);
+  border-radius: var(--radius);
+}
+
+.assistant-promo:hover {
+  color: var(--blue);
+  background: var(--white);
+  border-color: var(--white);
+}
+
+.assistant-promo span {
+  display: grid;
+  line-height: 1.2;
+}
+
+.assistant-promo small {
+  font-size: 0.75rem;
+}
+
+.header-shipping {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 10.5rem;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.header-shipping span {
+  display: grid;
+}
+
+.header-shipping small {
+  font-size: 0.75rem;
+}
+
+.header-links,
+.header-account {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  white-space: nowrap;
+}
+
+.header-links {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-links a[aria-current='page'] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.header-account {
+  margin-left: auto;
+}
+
+.header-account .link-button {
+  font-size: inherit;
+  color: var(--white);
+  text-decoration: none;
+}
+
+.header-account .link-button:hover {
+  color: var(--white);
+  text-decoration: underline;
+}
+
+.category-menu {
+  position: relative;
+}
+
+.category-menu-button {
+  gap: 0.2rem;
+  min-height: 2rem;
+  padding: 0;
+  font-size: inherit;
+  color: var(--white);
+  background: none;
+  border: 0;
+}
+
+.category-menu-button:hover {
+  color: var(--white);
+  text-decoration: underline;
+  background: none;
+}
+
+.category-menu-button[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.category-menu-list {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 15;
+  min-width: 13rem;
+  margin: 0;
+  padding: 0.4rem 0;
+  list-style: none;
+  background: var(--white);
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius);
+}
+
+.header .category-menu-list a {
+  display: block;
+  padding: 0.55rem 1rem;
+  color: var(--black);
+}
+
+.header .category-menu-list a:hover,
+.header .category-menu-list a:focus-visible {
+  color: var(--white);
+  text-decoration: none;
+  background: var(--blue);
+}
+
+.cart-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem;
+}
+
+.cart-count {
+  position: absolute;
+  top: -0.2rem;
+  right: -0.45rem;
+  display: grid;
+  place-items: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.25rem;
+  font-size: 0.7rem;
+  color: var(--blue);
+  background: var(--white);
+  border-radius: 999px;
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content);
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+  /* Layouts respond to the space left beside the chat panel, not just the window. */
+  container-type: inline-size;
+}
+
+.footer {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  background: var(--white);
+  border-top: 1px solid var(--blue-line);
+}
+
+.footer p {
+  margin: 0.2rem 0;
+}
+
+/* Pages that are one block of content sit on a white sheet. */
+.panel,
+.cart-page,
+.checkout-page,
+.auth-page,
+.account-page,
+.order-page,
+.admin-page {
+  padding: 1.25rem;
+  background: var(--white);
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius);
+}
+
+.panel + .panel {
+  margin-top: 1.25rem;
+}
+
+.auth-page {
+  max-width: 28rem;
+  margin: 1rem auto;
+}
+
+.panel-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.see-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: auto;
+}
+
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  font-size: 0.9rem;
+  list-style: none;
+}
+
+.breadcrumbs li + li::before {
+  content: '›';
+  margin-right: 0.25rem;
+}
+
+/* ---------- Home ---------- */
+
+.hero {
+  padding: 2.5rem;
+  color: var(--white);
+  background: var(--blue);
+  border-radius: var(--radius);
+}
+
+.hero h1 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.9rem, 4vw, 2.75rem);
+}
+
+.hero p {
+  max-width: 36rem;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  background: var(--white);
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius);
+}
+
+.benefits li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.benefits li + li {
+  border-left: 1px solid var(--blue-line);
+}
+
+.benefits svg {
+  flex: none;
+  color: var(--blue);
+}
+
+.category-tiles {
+  display: flex;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 0.25rem 0.1rem 0.5rem;
+  overflow-x: auto;
+}
+
+.category-tile {
+  display: grid;
+  flex: 0 0 6.5rem;
+  justify-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--black);
+  text-align: center;
+  text-decoration: none;
+}
+
+.category-tile:hover {
+  color: var(--blue);
+}
+
+.category-tile-icon {
+  display: grid;
+  place-items: center;
+  width: 5.25rem;
+  height: 5.25rem;
+  color: var(--blue);
+  background: var(--white);
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius);
+}
+
+.category-tile:hover .category-tile-icon {
+  border-color: var(--blue);
+}
+
+.shelf-row {
+  display: grid;
+  grid-auto-columns: minmax(11rem, 1fr);
+  grid-auto-flow: column;
+  gap: 1rem;
+  padding-bottom: 0.25rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.shelf-row > * {
+  scroll-snap-align: start;
+}
+
+/* ---------- Product cards ---------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  gap: 1rem;
+}
+
+.product-card {
+  overflow: hidden;
+  background: var(--white);
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius);
+}
+
+.product-card:hover {
+  border-color: var(--blue);
+}
+
+.product-card-link {
+  display: block;
+  height: 100%;
+  color: var(--black);
+  text-decoration: none;
+}
+
+.product-card-link:hover {
+  color: var(--black);
+}
+
+.product-media {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  color: var(--blue);
+  background: var(--blue-tint);
+}
+
+.product-media {
+  overflow: hidden;
+}
+
+/* The photo fills the square without changing its size, so every card in a row matches. */
+.product-media img,
+.product-gallery img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-media .badge {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  margin: 0;
+}
+
+.product-body {
+  padding: 0.75rem 0.9rem 1rem;
+}
+
+.product-body h3 {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.95rem;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.product-card:hover h3 {
+  color: var(--blue);
+  text-decoration: underline;
+}
+
+.product-brand {
+  margin: 0.15rem 0 0.4rem;
+  font-size: 0.85rem;
+}
+
+.product-price {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.shipping-note {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  color: var(--blue);
+}
+
+.product-card.compact .product-media {
+  aspect-ratio: 16 / 9;
+}
+
+.product-card.compact .product-price {
+  font-size: 1.15rem;
+}
+
+.skeleton .product-media {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.skeleton-line {
+  display: block;
+  height: 0.8rem;
+  margin: 0.4rem 0;
+  background: var(--blue-tint);
+  border-radius: 4px;
+}
+
+.skeleton-line.short {
+  width: 50%;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ---------- Catalog (/shop) ---------- */
+
+.catalog {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.catalog .panel + .panel {
+  margin-top: 0;
+}
+
+.filters {
+  position: sticky;
+  top: 8rem;
+  display: grid;
+  gap: 1.1rem;
+}
+
+.filters-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chips button {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.8rem;
+  font-size: 0.9rem;
+  border-radius: 999px;
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.field input {
   width: 100%;
 }
 
-.transcript li.user {
-  font-weight: 500;
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.filter-tag {
+  min-height: 2rem;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.9rem;
+  color: var(--blue);
+  background: var(--blue-tint);
+  border-color: var(--blue-line);
+  border-radius: 999px;
+}
+
+.filter-tag:hover {
+  color: var(--white);
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.load-more {
+  display: flex;
+  margin: 1.5rem auto 0;
+}
+
+/* ---------- Product page ---------- */
+
+.product-page {
+  display: grid;
+  /* minmax(0, …) so the scrolling recommendation rows can't widen the page. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.product-page .breadcrumbs ol {
+  margin: 0;
+}
+
+.product-page .panel + .panel {
+  margin-top: 0;
+}
+
+.product-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 2rem;
+}
+
+.product-gallery {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  color: var(--blue);
+  background: var(--blue-tint);
+  border-radius: var(--radius);
+}
+
+
+.product-info {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+}
+
+.product-info h1,
+.product-info p {
+  margin: 0;
+}
+
+.product-info .price {
+  font-size: 2.1rem;
+}
+
+.product-info label {
+  display: grid;
+  gap: 0.3rem;
+  max-width: 16rem;
+}
+
+.product-info > button {
+  justify-self: start;
+  min-width: 14rem;
+  min-height: 3rem;
+}
+
+.product-info .notice {
+  margin: 0;
+}
+
+/* ---------- Cart, checkout, orders ---------- */
+
+.cart-lines {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.cart-lines li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--blue-line);
+}
+
+.cart-lines li > div {
+  flex: 1 1 12rem;
+}
+
+.totals {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: start;
+  gap: 0.35rem 2rem;
+  margin: 0 0 1rem;
+}
+
+.totals dd {
+  margin: 0;
+  text-align: right;
+}
+
+.totals .total,
+.totals dt:last-of-type {
+  font-size: 1.2rem;
+}
+
+.coupon,
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.coupon label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.form label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.choice:has(input:checked) {
+  background: var(--blue-tint);
+  border-color: var(--blue);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.order-list,
+.address-list,
+.conversation-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-list li,
+.address-list li {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--blue-line);
+}
+
+.confirm-box,
+.confirm-card,
+.order-card {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.9rem;
+  background: var(--white);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+}
+
+.confirm-box p,
+.confirm-card p,
+.order-card p {
+  margin: 0;
+}
+
+/* ---------- Chat panel ---------- */
+
+.chat {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  height: 70vh;
+  background: var(--white);
+  border-top: 2px solid var(--blue);
+}
+
+@media (min-width: 768px) {
+  .chat {
+    inset: 0 0 0 auto;
+    width: var(--chat-width);
+    height: auto;
+    border-top: 0;
+    border-left: 1px solid var(--blue-line);
+  }
+
+  .chat-open {
+    padding-right: var(--chat-width);
+  }
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  color: var(--white);
+  background: var(--blue);
+}
+
+.chat-header h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.chat-header button {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  color: var(--white);
+  background: transparent;
+  border-color: var(--white);
+}
+
+.chat-header button:hover {
+  color: var(--blue);
+  background: var(--white);
+}
+
+.chat-history {
+  max-height: 12rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  overflow-y: auto;
+  list-style: none;
+  border-bottom: 1px solid var(--blue-line);
+}
+
+.chat-history button,
+.conversation-list button {
+  justify-content: flex-start;
+  width: 100%;
+  color: var(--black);
+  text-align: left;
+  background: transparent;
+  border-color: transparent;
+}
+
+.chat-history button:hover,
+.chat-history button[aria-current='true'],
+.conversation-list button:hover {
+  color: var(--black);
+  background: var(--blue-tint);
+  border-color: transparent;
+}
+
+.chat-messages {
+  flex: 1;
+  margin: 0;
+  padding: 0.75rem;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--blue-tint);
+}
+
+.chat-messages > li {
+  max-width: 88%;
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--white);
+  border: 1px solid var(--blue-line);
+  border-radius: 14px 14px 14px 4px;
+}
+
+.chat-messages > li.user {
+  margin-left: auto;
+  color: var(--white);
+  background: var(--blue);
+  border-color: var(--blue);
+  border-radius: 14px 14px 4px 14px;
+}
+
+.chat-messages > li.user a {
+  color: var(--white);
+}
+
+.chat-messages p {
+  margin: 0.25rem 0;
+}
+
+.chat-cards {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.chat-status {
+  margin: 0;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.chat-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--blue-line);
+}
+
+.chat-input input {
+  flex: 1;
+  min-width: 0;
+  border-radius: 999px;
+}
+
+.chat-input button {
+  border-radius: 999px;
 }
 
 .compare-card {
   overflow-x: auto;
 }
 
-.recommendations {
-  margin-top: 2rem;
+/* ---------- Backoffice ---------- */
+
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--blue-line);
+}
+
+.admin-nav a {
+  padding: 0.35rem 0.8rem;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+.admin-nav a:hover {
+  border-color: var(--blue);
+}
+
+.admin-nav a.active {
+  color: var(--white);
+  background: var(--blue);
+}
+
+.admin-table {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.55rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--blue-line);
+}
+
+.admin-table th {
+  font-size: 0.9rem;
+  background: var(--blue-tint);
+}
+
+.transcript li.user {
+  color: var(--blue);
+}
+
+/* ---------- Narrow spaces ---------- */
+
+@container (max-width: 760px) {
+  .catalog,
+  .product-main {
+    grid-template-columns: 1fr;
+  }
+
+  .product-gallery {
+    justify-self: center;
+    max-width: 26rem;
+  }
+
+  .filters {
+    position: static;
+  }
+
+  .hero {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .benefits {
+    grid-template-columns: 1fr;
+  }
+
+  .benefits li + li {
+    border-top: 1px solid var(--blue-line);
+    border-left: 0;
+  }
+}
+
+@container header (max-width: 1000px) {
+  .header-shipping,
+  .assistant-promo small {
+    display: none;
+  }
+}
+
+@container header (max-width: 760px) {
+  .header-top {
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    min-width: 0;
+  }
+
+  .search {
+    flex-basis: 100%;
+    order: 3;
+    max-width: none;
+  }
+
+  .kbd-hint {
+    display: none;
+  }
+
+  .header-bottom {
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .header-links,
+  .header-account {
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+  }
+
+  .header-account {
+    margin-left: 0;
+  }
+}
+
+/* Phones: the categories menu stays, the quick links go (they are on the home page too). */
+@container header (max-width: 520px) {
+  .header-links > a {
+    display: none;
+  }
+
+  .header-bottom,
+  .header-links,
+  .header-account {
+    flex-wrap: nowrap;
+  }
+
+  .header-links {
+    flex: none;
+  }
+
+  .header-bottom {
+    gap: 0.75rem;
+  }
+
+  .header-account {
+    gap: 0.75rem;
+    margin-left: auto;
+    padding-right: 0.4rem;
+  }
+}
+
+@media (max-width: 600px) {
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .product-price {
+    font-size: 1.2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+  }
 }

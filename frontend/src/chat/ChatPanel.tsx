@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { cartKey } from '../api/cart'
 import { api, type CartView, type OrderView, type ProductSummary } from '../api/client'
+import { MicIcon } from '../components/icons'
 import { OrderCard } from '../components/OrderCard'
 import { ProductCard } from '../components/ProductCard'
 import { formatMoney, hasKey, t } from '../i18n'
@@ -234,8 +235,9 @@ export function ChatPanel() {
             aria-pressed={voice.listening}
             aria-label={voice.listening ? t('chat.stopVoice') : t('chat.startVoice')}
             disabled={busy}
+            className={voice.listening ? undefined : 'button-secondary'}
           >
-            🎤
+            <MicIcon size={18} />
           </button>
         )}
         <button type="submit" disabled={busy || !input.trim()}>

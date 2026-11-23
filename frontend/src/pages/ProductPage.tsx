@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { useAddToCart } from '../api/cart'
-import { api } from '../api/client'
-import { ProductCard } from '../components/ProductCard'
+import { api, type ProductSummary } from '../api/client'
+import { categoryKey, CategoryArt } from '../components/icons'
+import { FREE_SHIPPING_FROM, ProductCard } from '../components/ProductCard'
+import { Breadcrumbs, EmptyState, Loading } from '../components/Status'
 import { formatMoney, t } from '../i18n'
 
 export function ProductPage() {
@@ -17,66 +19,115 @@ export function ProductPage() {
   })
   const [variantId, setVariantId] = useState<number | undefined>()
 
-  if (product.isError) return <p role="alert">{t('product.notFound')}</p>
-  if (!product.data) return null
+  if (product.isError)
+    return (
+      <section className="panel">
+        <EmptyState
+          title={t('product.notFound')}
+          action={
+            <Link to="/shop" className="button">
+              {t('home.browse')}
+            </Link>
+          }
+        >
+          {t('product.notFoundHelp')}
+        </EmptyState>
+      </section>
+    )
+  if (!product.data) return <Loading />
 
   const p = product.data
   const variants = p.variants ?? []
   const single = variants.length === 1 ? variants[0] : undefined
   const selected = single?.id ?? variantId
+  const soldOut = variants.every((v) => v.stock === 0)
+  const chosen = variants.find((v) => v.id === selected)
 
   return (
     <article className="product-page">
-      <h1>{p.name}</h1>
-      <p className="muted">
-        {p.brand} · {p.category}
-      </p>
-      <p className="price">{formatMoney(p.price)}</p>
-      <p>{p.description}</p>
+      <Breadcrumbs
+        items={[{ label: p.category, to: `/shop?category=${categoryKey(p.category)}` }, { label: p.name }]}
+      />
+      <div className="panel product-main">
+        <div className="product-gallery">
+          {p.imageUrl ? <img src={p.imageUrl} alt={p.name} /> : <CategoryArt category={p.category} size={180} />}
+        </div>
+        <div className="product-info">
+          <p>
+            {p.brand} · {p.category}
+          </p>
+          <h1>{p.name}</h1>
+          <p className="price">{formatMoney(p.price)}</p>
+          <p className="shipping-note">
+            {p.price.amount >= FREE_SHIPPING_FROM
+              ? t('product.freeShipping')
+              : t('product.freeShippingFrom', { amount: formatMoney({ amount: FREE_SHIPPING_FROM, currency: 'USD' }) })}
+          </p>
+          <p>{p.description}</p>
 
-      {!single && (
-        <label>
-          {t('product.size')}
-          <select value={variantId ?? ''} onChange={(e) => setVariantId(Number(e.target.value) || undefined)}>
-            <option value="">{t('product.chooseSize')}</option>
-            {variants.map((v) => (
-              <option key={v.id} value={v.id} disabled={v.stock === 0}>
-                {v.size}
-                {v.stock === 0 ? ` (${t('product.outOfStock')})` : ''}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
+          {!single && (
+            <label>
+              {t('product.size')}
+              <select
+                value={variantId ?? ''}
+                aria-describedby="size-hint"
+                onChange={(e) => setVariantId(Number(e.target.value) || undefined)}
+              >
+                <option value="">{t('product.chooseSize')}</option>
+                {variants.map((v) => (
+                  <option key={v.id} value={v.id} disabled={v.stock === 0}>
+                    {v.size}
+                    {v.stock === 0 ? ` (${t('product.outOfStock')})` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {chosen && chosen.stock > 0 && chosen.stock <= 3 && <p>{t('product.lowStock', { count: chosen.stock })}</p>}
 
-      <button
-        type="button"
-        disabled={!selected || addToCart.isPending}
-        onClick={() => selected && addToCart.mutate({ variantId: selected, quantity: 1 })}
-      >
-        {t('product.addToCart')}
-      </button>
-      <p aria-live="polite">
-        {addToCart.isSuccess && t('product.added')}
-        {addToCart.isError && <span role="alert">{addToCart.error.message}</span>}
-      </p>
-
-      {recommendations.data && recommendations.data.goesWith.length > 0 && (
-        <section className="recommendations">
-          <h2>{t('product.goesWith')}</h2>
-          <div className="grid">
-            {recommendations.data.goesWith.map((r) => <ProductCard key={r.id} product={r} />)}
+          <button
+            type="button"
+            disabled={soldOut || !selected || addToCart.isPending}
+            onClick={() => selected && addToCart.mutate({ variantId: selected, quantity: 1 })}
+          >
+            {soldOut ? t('product.outOfStock') : addToCart.isPending ? t('product.adding') : t('product.addToCart')}
+          </button>
+          {!soldOut && !selected && (
+            <p id="size-hint" className="hint">
+              {t('product.chooseSizeFirst')}
+            </p>
+          )}
+          <div aria-live="polite">
+            {addToCart.isSuccess && (
+              <p className="notice">
+                {t('product.added')} <Link to="/cart">{t('product.viewCart')}</Link>
+              </p>
+            )}
+            {addToCart.isError && (
+              <p className="notice" role="alert">
+                {addToCart.error.message}
+              </p>
+            )}
           </div>
-        </section>
-      )}
-      {recommendations.data && recommendations.data.similar.length > 0 && (
-        <section className="recommendations">
-          <h2>{t('product.similar')}</h2>
-          <div className="grid">
-            {recommendations.data.similar.map((r) => <ProductCard key={r.id} product={r} />)}
-          </div>
-        </section>
-      )}
+        </div>
+      </div>
+
+      <Shelf title={t('product.goesWith')} items={recommendations.data?.goesWith} />
+      <Shelf title={t('product.similar')} items={recommendations.data?.similar} />
     </article>
+  )
+}
+
+function Shelf({ title, items }: { title: string; items?: ProductSummary[] }) {
+  if (!items || items.length === 0) return null
+  return (
+    <section className="panel recommendations">
+      <h2 className="panel-title">{title}</h2>
+      <div className="shelf-row">
+        {items.map((r) => (
+          <ProductCard key={r.id} product={r} />
+        ))}
+      </div>
+    </section>
   )
 }
