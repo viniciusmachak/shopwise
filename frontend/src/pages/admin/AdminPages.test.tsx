@@ -103,7 +103,7 @@ describe('admin pages', () => {
   it('switches the chat mode from the dashboard', async () => {
     const status = (mode: string) => ({
       mode, configuredMode: 'LOCAL', changedAt: null, localModel: 'qwen2.5:7b', fallbackToLocal: true,
-      cloudProviders: [{ name: 'gemini', model: 'gemini-2.5-flash', configured: true }],
+      cloudProviders: [{ name: 'gemini', model: 'gemini-2.5-flash-lite', configured: true }],
     })
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input)
