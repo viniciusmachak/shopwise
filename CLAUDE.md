@@ -28,7 +28,7 @@ Keep this list current when commands change.
 ```bash
 cp .env.example .env                                  # local keys and model names, git-ignored
 docker compose -f deploy/docker-compose.yml up -d    # Postgres (:5433), Ollama (pulls models), Mailpit
-cd backend && ./mvnw spring-boot:run                  # backend on :8080, local AI mode by default
+cd backend && ./mvnw spring-boot:run                  # backend on :8080; AI mode and keys come from .env
 cd backend && ./mvnw verify                           # unit + integration tests (Testcontainers)
 cd backend && ./mvnw verify -Pevals                   # assistant evals against local Ollama
 cd frontend && npm run dev                            # frontend on :5173, proxies /api to :8080
