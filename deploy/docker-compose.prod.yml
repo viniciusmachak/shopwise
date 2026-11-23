@@ -35,7 +35,10 @@ services:
       - |
         sleep 5
         ollama pull ${SHOPWISE_EMBEDDING_MODEL:-nomic-embed-text}
-        ollama pull ${SHOPWISE_OLLAMA_CHAT_MODEL:-qwen2.5:7b}
+        # The chat model is only needed when local mode or the local fallback is in use.
+        if [ "${SHOPWISE_AI_CHAT_MODE:-cloud}" = local ] || [ "${SHOPWISE_AI_FALLBACK_TO_LOCAL:-true}" = true ]; then
+          ollama pull ${SHOPWISE_OLLAMA_CHAT_MODEL:-qwen2.5:7b}
+        fi
     restart: "no"
 
   backend:

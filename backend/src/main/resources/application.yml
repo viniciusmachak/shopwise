@@ -123,8 +123,10 @@ shopwise:
         - name: gemini
           base-url: https://generativelanguage.googleapis.com/v1beta/openai
           api-key: ${GEMINI_API_KEY:}
-          model: ${SHOPWISE_GEMINI_MODEL:gemini-2.5-flash}
+          # Gemini 3 needs thought signatures sent back with tool calls, which the OpenAI client
+          # here does not do. Stay on 2.5 until it does.
+          model: ${SHOPWISE_GEMINI_MODEL:gemini-2.5-flash-lite}
         - name: groq
           base-url: https://api.groq.com/openai/v1
           api-key: ${GROQ_API_KEY:}
-          model: ${SHOPWISE_GROQ_MODEL:llama-3.3-70b-versatile}
+          model: ${SHOPWISE_GROQ_MODEL:openai/gpt-oss-120b}
